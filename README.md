@@ -4,3 +4,5 @@
 - Insaurralde Lucas Ciro
 - Lovera Franco
 - Ferreira Valentin
+- Altamirano Tiago
+- Garcinuño Martin
