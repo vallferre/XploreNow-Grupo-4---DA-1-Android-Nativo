@@ -1,6 +1,6 @@
-### XploreNow Grupo 4 DA 1 Android Nativo
+# XploreNow Grupo 4 DA 1 Android Nativo
 ## Trabajo Práctico Obligatorio proyecto XploreNow
-# Integrantes:
+### Integrantes:
 - Insaurralde Lucas Ciro
 - Lovera Franco
 - Ferreira Valentin
