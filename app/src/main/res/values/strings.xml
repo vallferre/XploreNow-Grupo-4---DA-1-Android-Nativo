@@ -7,6 +7,18 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
+    <!-- Errores de validación -->
+    <string name="error_name_required">Ingresá tu nombre</string>
+    <string name="error_email_invalid">Email inválido</string>
+    <string name="error_password_min_length">Mínimo 6 caracteres</string>
+    <string name="error_passwords_no_match">Las contraseñas no coinciden</string>
+    <string name="error_fields_required">Completá todos los campos</string>
+
+    <!-- OTP -->
+    <string name="otp_sent_to">Código enviado a %1$s</string>
+    <string name="otp_resent">Código reenviado</string>
+    <string name="otp_expired">Código expirado</string>
+
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
         volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus
