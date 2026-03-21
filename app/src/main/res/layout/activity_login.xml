@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F7F5F2"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:gravity="center_horizontal">
+
+        <!-- Logo / Ícono superior -->
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="48dp"
+            android:src="@android:drawable/ic_menu_compass"
+            android:tint="#1A1A2E" />
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="XploreNow"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#1A1A2E"
+            android:letterSpacing="0.05" />
+
+        <!-- Subtítulo -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Iniciá sesión para continuar"
+            android:textSize="14sp"
+            android:textColor="#888888" />
+
+        <!-- Tarjeta del formulario -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_rounded"
+            android:padding="24dp"
+            android:elevation="4dp">
+
+            <!-- Email -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Email"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#1A1A2E"
+                android:letterSpacing="0.08" />
+
+            <EditText
+                android:id="@+id/etEmail"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:inputType="textEmailAddress"
+                android:hint="usuario@email.com"
+                android:textSize="14sp"
+                android:textColor="#1A1A2E"
+                android:textColorHint="#BBBBBB" />
+
+            <!-- Contraseña -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Contraseña"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#1A1A2E"
+                android:letterSpacing="0.08" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:inputType="textPassword"
+                android:hint="••••••••"
+                android:textSize="14sp"
+                android:textColor="#1A1A2E"
+                android:textColorHint="#BBBBBB" />
+
+            <!-- Botón ingresar -->
+            <Button
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="28dp"
+                android:background="@drawable/bg_button_primary"
+                android:text="INGRESAR"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+
+        </LinearLayout>
+
+        <!-- Ir al registro -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¿No tenés cuenta? "
+                android:textSize="14sp"
+                android:textColor="#888888" />
+
+            <TextView
+                android:id="@+id/btnGoToRegister"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Registrate"
+                android:textSize="14sp"
+                android:textColor="#E63946"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

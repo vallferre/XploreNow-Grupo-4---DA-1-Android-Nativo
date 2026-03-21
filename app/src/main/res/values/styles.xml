@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Estilo base heredado del tema de la app -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#E63946</item>
+        <item name="colorPrimaryDark">#C1121F</item>
+        <item name="colorAccent">#E63946</item>
+    </style>
+
+    <!-- Cada campo individual del código OTP -->
+    <style name="OtpField">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:layout_marginStart">5dp</item>
+        <item name="android:layout_marginEnd">5dp</item>
+        <item name="android:background">@drawable/bg_otp_field</item>
+        <item name="android:gravity">center</item>
+        <item name="android:inputType">number</item>
+        <item name="android:maxLength">1</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#1A1A2E</item>
+        <item name="android:textAlignment">center</item>
+    </style>
+
+</resources>

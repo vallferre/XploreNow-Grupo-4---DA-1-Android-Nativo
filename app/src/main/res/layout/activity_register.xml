@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F7F5F2"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:gravity="center_horizontal">
+
+        <!-- Ícono superior -->
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="48dp"
+            android:src="@android:drawable/ic_menu_compass"
+            android:tint="#1A1A2E" />
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="XploreNow"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#1A1A2E"
+            android:letterSpacing="0.05" />
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 1: Formulario de registro                                  -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/stepForm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Creá tu cuenta"
+                android:textSize="14sp"
+                android:textColor="#888888" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_rounded"
+                android:padding="24dp"
+                android:elevation="4dp">
+
+                <!-- Nombre -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nombre"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A1A2E"
+                    android:letterSpacing="0.08" />
+
+                <EditText
+                    android:id="@+id/etName"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:inputType="textPersonName|textCapWords"
+                    android:hint="Tu nombre completo"
+                    android:textSize="14sp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB" />
+
+                <!-- Email -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="Email"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A1A2E"
+                    android:letterSpacing="0.08" />
+
+                <EditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:inputType="textEmailAddress"
+                    android:hint="usuario@email.com"
+                    android:textSize="14sp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB" />
+
+                <!-- Contraseña -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="Contraseña"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A1A2E"
+                    android:letterSpacing="0.08" />
+
+                <EditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:inputType="textPassword"
+                    android:hint="Mínimo 6 caracteres"
+                    android:textSize="14sp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB" />
+
+                <!-- Confirmar contraseña -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="Confirmá la contraseña"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A1A2E"
+                    android:letterSpacing="0.08" />
+
+                <EditText
+                    android:id="@+id/etConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:inputType="textPassword"
+                    android:hint="Repetí tu contraseña"
+                    android:textSize="14sp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB" />
+
+                <!-- Botón enviar OTP -->
+                <Button
+                    android:id="@+id/btnSendOtp"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="28dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:text="ENVIAR CÓDIGO"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 2: Verificación OTP                                        -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/stepOtp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Verificá tu email"
+                android:textSize="14sp"
+                android:textColor="#888888" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_rounded"
+                android:padding="24dp"
+                android:elevation="4dp"
+                android:gravity="center_horizontal">
+
+                <!-- Mensaje de email enviado -->
+                <TextView
+                    android:id="@+id/tvOtpEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Código enviado a tu email"
+                    android:textSize="13sp"
+                    android:textColor="#555555"
+                    android:gravity="center"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- 6 campos del OTP en fila -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <EditText
+                        android:id="@+id/etOtp1"
+                        style="@style/OtpField" />
+
+                    <EditText
+                        android:id="@+id/etOtp2"
+                        style="@style/OtpField" />
+
+                    <EditText
+                        android:id="@+id/etOtp3"
+                        style="@style/OtpField" />
+
+                    <EditText
+                        android:id="@+id/etOtp4"
+                        style="@style/OtpField" />
+
+                    <EditText
+                        android:id="@+id/etOtp5"
+                        style="@style/OtpField" />
+
+                    <EditText
+                        android:id="@+id/etOtp6"
+                        style="@style/OtpField" />
+
+                </LinearLayout>
+
+                <!-- Timer -->
+                <TextView
+                    android:id="@+id/tvTimer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="05:00"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A1A2E" />
+
+                <!-- Botón verificar -->
+                <Button
+                    android:id="@+id/btnVerify"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:text="VERIFICAR"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:enabled="false" />
+
+                <!-- Reenviar código -->
+                <Button
+                    android:id="@+id/btnResend"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_button_secondary"
+                    android:text="REENVIAR CÓDIGO"
+                    android:textColor="#1A1A2E"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:enabled="false" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Ir al login -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¿Ya tenés cuenta? "
+                android:textSize="14sp"
+                android:textColor="#888888" />
+
+            <TextView
+                android:id="@+id/tvGoToLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Iniciá sesión"
+                android:textSize="14sp"
+                android:textColor="#E63946"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
