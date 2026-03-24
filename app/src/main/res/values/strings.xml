@@ -14,6 +14,10 @@
     <string name="error_passwords_no_match">Las contraseñas no coinciden</string>
     <string name="error_fields_required">Completá todos los campos</string>
 
+    <!-- Errores Firebase -->
+    <string name="error_login_failed">Email o contraseña incorrectos</string>
+    <string name="error_firestore">Error al guardar el usuario</string>
+
     <!-- OTP -->
     <string name="otp_sent_to">Código enviado a %1$s</string>
     <string name="otp_resent">Código reenviado</string>

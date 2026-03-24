@@ -15,7 +15,14 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class RegisterActivity extends AppCompatActivity {
@@ -40,6 +47,9 @@ public class RegisterActivity extends AppCompatActivity {
     private TextView       tvGoToLogin;
     private CountDownTimer countDownTimer;
 
+    private FirebaseAuth      mAuth;
+    private FirebaseFirestore db;
+
     private static final long OTP_EXPIRY_MS = 5 * 60 * 1000L;
 
     // ─── Ciclo de vida ────────────────────────────────────────────────────────
@@ -49,7 +59,9 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        // Reemplaza el onBackPressed deprecado
+        mAuth = FirebaseAuth.getInstance();
+        db    = FirebaseFirestore.getInstance();
+
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -139,12 +151,10 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void setListeners() {
         btnSendOtp.setOnClickListener(v -> attemptSendOtp());
-
         btnVerify.setOnClickListener(v -> attemptVerifyOtp());
 
         btnResend.setOnClickListener(v -> {
             clearOtpFields();
-            // TODO: reemplazar por llamada al backend para reenviar OTP
             Toast.makeText(this, getString(R.string.otp_resent), Toast.LENGTH_SHORT).show();
             btnResend.setEnabled(false);
             startCountdown();
@@ -153,7 +163,7 @@ public class RegisterActivity extends AppCompatActivity {
         tvGoToLogin.setOnClickListener(v -> finish());
     }
 
-    // ─── Paso 1: validar formulario y pedir OTP ───────────────────────────────
+    // ─── Paso 1: validar formulario → crear cuenta en Firebase Auth ──────────
 
     private void attemptSendOtp() {
         String name    = etName.getText().toString().trim();
@@ -182,18 +192,48 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        // TODO: reemplazar por llamada al backend (POST /auth/otp/request con email y name)
-        // Simulación: OTP enviado con éxito
-        tvOtpEmail.setText(getString(R.string.otp_sent_to, email));
-        showStep(STEP_OTP);
-        startCountdown();
+        btnSendOtp.setEnabled(false);
+
+        // 1) Crear usuario en Firebase Authentication
+        mAuth.createUserWithEmailAndPassword(email, pass)
+                .addOnSuccessListener(authResult -> {
+                    String uid = authResult.getUser().getUid();
+
+                    // 2) Guardar datos del usuario en Firestore (colección "users")
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("id",          uid);
+                    userData.put("email",        email);
+                    userData.put("name",         name);
+                    userData.put("preferences",  new ArrayList<>());
+                    userData.put("createdAt",    FieldValue.serverTimestamp());
+
+                    db.collection("users")
+                            .document(uid)   // usamos el mismo UID de Auth como ID del documento
+                            .set(userData)
+                            .addOnSuccessListener(unused -> {
+                                btnSendOtp.setEnabled(true);
+
+                                // 3) Mostrar step OTP (simulado por ahora)
+                                tvOtpEmail.setText(getString(R.string.otp_sent_to, email));
+                                showStep(STEP_OTP);
+                                startCountdown();
+                            })
+                            .addOnFailureListener(e -> {
+                                btnSendOtp.setEnabled(true);
+                                Toast.makeText(this, getString(R.string.error_firestore), Toast.LENGTH_LONG).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    btnSendOtp.setEnabled(true);
+                    Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 
-    // ─── Paso 2: verificar el código OTP ─────────────────────────────────────
+    // ─── Paso 2: verificar OTP → navegar al Home ─────────────────────────────
 
     private void attemptVerifyOtp() {
-        // TODO: reemplazar por llamada al backend (POST /auth/otp/verify con email y code)
-        // Simulación: cualquier código de 6 dígitos es válido
+        // TODO: conectar con servicio OTP real cuando el backend lo implemente
+        // Por ahora cualquier código de 6 dígitos es válido
         navigateToHome(etEmail.getText().toString().trim());
     }
 
