@@ -9,17 +9,29 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class LoginActivity extends AppCompatActivity {
 
-    private EditText etEmail, etPassword;
+    private EditText    etEmail, etPassword;
+
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        etEmail    = findViewById(R.id.etEmail);
-        etPassword = findViewById(R.id.etPassword);
+        mAuth = FirebaseAuth.getInstance();
+
+        // Si ya hay sesión activa, saltear el login e ir directo al Home
+        if (mAuth.getCurrentUser() != null) {
+            navigateToHome(mAuth.getCurrentUser().getEmail());
+            return;
+        }
+
+        etEmail     = findViewById(R.id.etEmail);
+        etPassword  = findViewById(R.id.etPassword);
 
         Button   btnLogin       = findViewById(R.id.btnLogin);
         TextView tvGoToRegister = findViewById(R.id.btnGoToRegister);
@@ -38,13 +50,18 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // TODO: reemplazar por llamada al backend
-        // Simulación: cualquier email/password ingresado es válido
-        navigateToHome(email);
+        // Firebase Authentication: verifica email y contraseña
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    navigateToHome(email);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, getString(R.string.error_login_failed), Toast.LENGTH_LONG).show();
+                });
     }
 
     private void navigateToHome(String email) {
-        Intent intent = new Intent(this, MainActivity.class); // <-- HomeActivity, no MainActivity
+        Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra("EMAIL_USUARIO", email);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
