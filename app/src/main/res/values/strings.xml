@@ -17,6 +17,52 @@
     <!-- Errores Firebase -->
     <string name="error_login_failed">Email o contraseña incorrectos</string>
     <string name="error_firestore">Error al guardar el usuario</string>
+    <string name="explore_title">Explorar</string>
+    <string name="explore_search_hint">Buscar actividades…</string>
+    <string name="explore_section_featured">⭐ Recomendadas para ti</string>
+    <string name="explore_section_all">Todas las actividades</string>
+    <string name="explore_chip_all">Todos</string>
+    <string name="explore_cupos_left">⚠️ %1$d cupos</string>
+    <string name="explore_load_error">No se pudieron cargar las actividades</string>
+    <string name="explore_empty">No hay actividades con esos filtros</string>
+    <string name="explore_rating">★ %1$.1f</string>
+    <string name="explore_nav_home">Inicio</string>
+    <string name="explore_nav_search">Buscar</string>
+    <string name="explore_nav_list">Lista</string>
+    <string name="explore_nav_profile">Perfil</string>
+    <string name="explore_open_filters">Abrir filtros</string>
+
+    <string name="filter_sheet_title">Filtrar actividades</string>
+    <string name="filter_label_destination">Destino</string>
+    <string name="filter_destination_todos">Todas las ciudades</string>
+    <string name="filter_label_category">Categoría</string>
+    <string name="filter_label_day">Día</string>
+    <string name="filter_day_todos">Cualquier día</string>
+    <string name="filter_category_todos">Todas</string>
+    <string name="filter_label_price">Rango de precio</string>
+    <string name="filter_price_range_fmt">$%1$d — $%2$d</string>
+    <string name="filter_btn_clear">Limpiar</string>
+    <string name="filter_btn_apply">Aplicar filtros</string>
+
+    <string name="detail_rating_reviews">%1$.1f (%2$d reseñas)</string>
+    <string name="detail_subtitle_fmt">📍 %1$s  ·  ★ %2$.1f (%3$d reseñas)</string>
+    <string name="detail_label_duration">Duración</string>
+    <string name="detail_label_language">Idioma</string>
+    <string name="detail_label_spots">Cupos</string>
+    <string name="detail_label_guide">Guía</string>
+    <string name="detail_spots_fmt">%1$d disponibles</string>
+    <string name="detail_section_description">Descripción</string>
+    <string name="detail_section_includes">Qué incluye</string>
+    <string name="detail_section_meeting">Punto de encuentro</string>
+    <string name="detail_price_hint">Precio por persona</string>
+    <string name="detail_book">Reservar ahora</string>
+    <string name="detail_load_error">No se pudo cargar la actividad</string>
+    <string name="detail_book_soon">Reservas próximamente</string>
+    <string name="detail_back">Volver</string>
+    <string name="detail_section_when">Cuándo</string>
+    <string name="detail_section_cancellation">Política de cancelación</string>
+    <string name="detail_cancel_type_fmt">Tipo: %1$s</string>
+    <string name="detail_cancel_hours_only">Cancelación sin cargo hasta %1$d h antes del inicio.</string>
 
     <!-- OTP -->
     <string name="otp_sent_to">Código enviado a %1$s</string>

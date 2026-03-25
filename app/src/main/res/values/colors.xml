@@ -2,4 +2,27 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="explore_bg">#FFF8F8FA</color>
+    <color name="explore_title">#FF1A1A1A</color>
+    <color name="explore_muted">#FF6B6B6B</color>
+    <color name="explore_chip_selected">#FF1E3A5F</color>
+    <color name="explore_chip_bg">#FFF0F0F2</color>
+    <color name="explore_chip_stroke">#FFD0D0D5</color>
+    <color name="explore_price_green">#FF2E7D32</color>
+    <color name="explore_accent_purple">#FF7C4DFF</color>
+    <color name="explore_nav_selected_bg">#337C4DFF</color>
+    <color name="explore_category_pill">#FFE8E0F5</color>
+    <color name="explore_duration_pill">#FFE3F2E5</color>
+    <color name="explore_warning">#FFC62828</color>
+    <color name="explore_search_bg">#FFF0F0F2</color>
+    <!-- Filtros (bottom sheet) -->
+    <color name="filter_primary">#FF5848A8</color>
+    <color name="filter_primary_light">#FFEDE7F6</color>
+    <color name="filter_sheet_handle">#FFBDBDBD</color>
+    <color name="filter_chip_sheet_bg">#FFF0F0F2</color>
+    <color name="filter_slider_inactive">#FFE0E0E0</color>
+    <color name="detail_info_card_bg">#FFF0F0F2</color>
+    <color name="detail_meeting_bg">#FFE8F5E9</color>
+    <color name="detail_cupos_low">#FFE65100</color>
+    <color name="detail_cancel_card_bg">#FFF3E8F5</color>
 </resources>
