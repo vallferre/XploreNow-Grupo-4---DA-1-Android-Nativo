@@ -1,7 +1,19 @@
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.google.gms.google.services)
 }
+
+// Gradle escribe mucho en app/build; OneDrive suele bloquear archivos y falla con
+// AccessDeniedException. La salida del módulo va a AppData\Local (no sincronizado).
+val offCloudAppBuild =
+    File(
+        System.getenv("LOCALAPPDATA")
+            ?: File(System.getProperty("user.home")!!, "AppData${File.separator}Local").absolutePath,
+        "AndroidBuild${File.separator}${rootProject.projectDir.name}${File.separator}app",
+    )
+layout.buildDirectory.set(file(offCloudAppBuild.absolutePath))
 
 android {
     namespace = "ar.edu.uadexplorenow"
@@ -52,4 +64,5 @@ dependencies {
     implementation (platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation ("com.google.firebase:firebase-firestore")
     implementation ("com.google.firebase:firebase-auth")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
