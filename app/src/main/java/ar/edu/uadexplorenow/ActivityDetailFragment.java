@@ -1,6 +1,7 @@
 package ar.edu.uadexplorenow;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -9,9 +10,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.button.MaterialButton;
@@ -19,66 +22,80 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
 
-public class ActivityDetailActivity extends AppCompatActivity {
+public class ActivityDetailFragment extends Fragment {
 
-    public static final String EXTRA_ACTIVITY_ID = "activity_id";
+    /** Mismo nombre que el argumento en {@code nav_graph.xml}. */
+    public static final String ARG_ACTIVITY_ID = "activity_id";
 
     private static final int CUPOS_LOW = 5;
 
+    @Nullable
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_activity_detail);
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
+        return inflater.inflate(R.layout.activity_activity_detail, container, false);
+    }
 
-        String id = getIntent().getStringExtra(EXTRA_ACTIVITY_ID);
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        String id = null;
+        if (getArguments() != null) {
+            id = getArguments().getString(ARG_ACTIVITY_ID);
+        }
         if (id == null || id.isEmpty()) {
-            finish();
+            Navigation.findNavController(view).popBackStack();
             return;
         }
 
-        View contentRoot = findViewById(R.id.contentRoot);
-        ProgressBar progress = findViewById(R.id.progress);
-        ViewPager2 photoPager = findViewById(R.id.photoPager);
-        LinearLayout dotsContainer = findViewById(R.id.dotsContainer);
-        ImageButton btnBack = findViewById(R.id.btnBack);
-        TextView tvHeroCategory = findViewById(R.id.tvHeroCategory);
-        TextView tvTitle = findViewById(R.id.tvTitle);
-        TextView tvSubtitle = findViewById(R.id.tvSubtitle);
-        TextView tvDuration = findViewById(R.id.tvDuration);
-        TextView tvLanguage = findViewById(R.id.tvLanguage);
-        TextView tvCupos = findViewById(R.id.tvCupos);
-        TextView tvGuide = findViewById(R.id.tvGuide);
-        TextView tvDescription = findViewById(R.id.tvDescription);
-        TextView tvIncludesTitle = findViewById(R.id.tvIncludesTitle);
-        LinearLayout includesContainer = findViewById(R.id.includesContainer);
-        TextView tvMeetingTitle = findViewById(R.id.tvMeetingTitle);
-        View cardMeeting = findViewById(R.id.cardMeetingPoint);
-        TextView tvMeetingPoint = findViewById(R.id.tvMeetingPoint);
-        TextView tvWhenLabel = findViewById(R.id.tvWhenLabel);
-        TextView tvActivityWhen = findViewById(R.id.tvActivityWhen);
-        TextView tvCancellationTitle = findViewById(R.id.tvCancellationTitle);
-        View cardCancellation = findViewById(R.id.cardCancellation);
-        TextView tvCancellationType = findViewById(R.id.tvCancellationType);
-        TextView tvCancellationDesc = findViewById(R.id.tvCancellationDesc);
-        TextView tvBottomPrice = findViewById(R.id.tvBottomPrice);
-        MaterialButton btnReserve = findViewById(R.id.btnReserve);
+        View contentRoot = view.findViewById(R.id.contentRoot);
+        ProgressBar progress = view.findViewById(R.id.progress);
+        ViewPager2 photoPager = view.findViewById(R.id.photoPager);
+        LinearLayout dotsContainer = view.findViewById(R.id.dotsContainer);
+        ImageButton btnBack = view.findViewById(R.id.btnBack);
+        TextView tvHeroCategory = view.findViewById(R.id.tvHeroCategory);
+        TextView tvTitle = view.findViewById(R.id.tvTitle);
+        TextView tvSubtitle = view.findViewById(R.id.tvSubtitle);
+        TextView tvDuration = view.findViewById(R.id.tvDuration);
+        TextView tvLanguage = view.findViewById(R.id.tvLanguage);
+        TextView tvCupos = view.findViewById(R.id.tvCupos);
+        TextView tvGuide = view.findViewById(R.id.tvGuide);
+        TextView tvDescription = view.findViewById(R.id.tvDescription);
+        TextView tvIncludesTitle = view.findViewById(R.id.tvIncludesTitle);
+        LinearLayout includesContainer = view.findViewById(R.id.includesContainer);
+        TextView tvMeetingTitle = view.findViewById(R.id.tvMeetingTitle);
+        View cardMeeting = view.findViewById(R.id.cardMeetingPoint);
+        TextView tvMeetingPoint = view.findViewById(R.id.tvMeetingPoint);
+        TextView tvWhenLabel = view.findViewById(R.id.tvWhenLabel);
+        TextView tvActivityWhen = view.findViewById(R.id.tvActivityWhen);
+        TextView tvCancellationTitle = view.findViewById(R.id.tvCancellationTitle);
+        View cardCancellation = view.findViewById(R.id.cardCancellation);
+        TextView tvCancellationType = view.findViewById(R.id.tvCancellationType);
+        TextView tvCancellationDesc = view.findViewById(R.id.tvCancellationDesc);
+        TextView tvBottomPrice = view.findViewById(R.id.tvBottomPrice);
+        MaterialButton btnReserve = view.findViewById(R.id.btnReserve);
 
-        btnBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        final String activityId = id;
+        btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         btnReserve.setOnClickListener(v ->
-                Toast.makeText(this, R.string.detail_book_soon, Toast.LENGTH_SHORT).show());
+                Toast.makeText(requireContext(), R.string.detail_book_soon, Toast.LENGTH_SHORT).show());
 
         DetailPhotoAdapter photoAdapter = new DetailPhotoAdapter();
         photoPager.setAdapter(photoAdapter);
 
         FirebaseFirestore.getInstance()
                 .collection("activities")
-                .document(id)
+                .document(activityId)
                 .get()
                 .addOnSuccessListener(doc -> {
                     ActivityDetail d = ActivityDetail.fromDocument(doc);
                     if (d == null) {
-                        Toast.makeText(this, R.string.detail_load_error, Toast.LENGTH_LONG).show();
-                        finish();
+                        Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
+                        Navigation.findNavController(view).popBackStack();
                         return;
                     }
                     bindDetail(
@@ -93,8 +110,8 @@ public class ActivityDetailActivity extends AppCompatActivity {
                     contentRoot.setVisibility(View.VISIBLE);
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, R.string.detail_load_error, Toast.LENGTH_LONG).show();
-                    finish();
+                    Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
+                    Navigation.findNavController(view).popBackStack();
                 });
     }
 
@@ -152,9 +169,9 @@ public class ActivityDetailActivity extends AppCompatActivity {
         tvLanguage.setText(d.languagesDisplay());
         tvCupos.setText(getString(R.string.detail_spots_fmt, (int) d.availableSpots));
         if (d.availableSpots > 0 && d.availableSpots <= CUPOS_LOW) {
-            tvCupos.setTextColor(ContextCompat.getColor(this, R.color.detail_cupos_low));
+            tvCupos.setTextColor(ContextCompat.getColor(requireContext(), R.color.detail_cupos_low));
         } else {
-            tvCupos.setTextColor(ContextCompat.getColor(this, R.color.explore_title));
+            tvCupos.setTextColor(ContextCompat.getColor(requireContext(), R.color.explore_title));
         }
 
         tvGuide.setText(d.guideName.isEmpty() ? "—" : d.guideName);
@@ -168,9 +185,9 @@ public class ActivityDetailActivity extends AppCompatActivity {
             tvIncludesTitle.setVisibility(View.VISIBLE);
             includesContainer.setVisibility(View.VISIBLE);
             for (String line : d.includes) {
-                TextView row = new TextView(this);
+                TextView row = new TextView(requireContext());
                 row.setText("✓ " + line);
-                row.setTextColor(ContextCompat.getColor(this, R.color.explore_muted));
+                row.setTextColor(ContextCompat.getColor(requireContext(), R.color.explore_muted));
                 row.setTextSize(15);
                 int sp = (int) (6 * getResources().getDisplayMetrics().density);
                 row.setPadding(0, sp, 0, sp);
@@ -245,7 +262,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
         int margin = (int) (4 * d);
 
         for (int i = 0; i < count; i++) {
-            View dot = new View(this);
+            View dot = new View(requireContext());
             boolean first = i == 0;
             int w = first ? sel : unsel;
             int h = first ? sel : unsel;

@@ -281,7 +281,7 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void navigateToHome(String email) {
-        Intent intent = new Intent(this, ExploreActivity.class);
+        Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra("EMAIL_USUARIO", email);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);

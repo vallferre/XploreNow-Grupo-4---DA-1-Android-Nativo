@@ -7,6 +7,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -16,19 +17,21 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.slider.RangeSlider;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -41,11 +44,10 @@ import java.util.Locale;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
-public class ExploreActivity extends AppCompatActivity {
+public class ExploreFragment extends Fragment {
 
     private static final String TAG_ALL = "";
 
-    /** Orden de días para chips (normalizado sin acentos). */
     private static final String[] DAY_ORDER_NORM = {
             "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"
     };
@@ -66,50 +68,58 @@ public class ExploreActivity extends AppCompatActivity {
 
     private String searchQuery = "";
 
-    /** Filtros aplicados (cruzados con la búsqueda por nombre). */
     private String filterDestination = TAG_ALL;
     private String filterCategory = TAG_ALL;
     private String filterDay = TAG_ALL;
     private double filterPriceMin = 0;
     private double filterPriceMax = 0;
 
-    /** Tope de precio del catálogo (ARS), se recalcula al cargar Firestore. */
     private double catalogMaxPrice = 80_000;
 
+    @Nullable
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_explore);
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
+        return inflater.inflate(R.layout.activity_explore, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
+            startActivity(new Intent(requireContext(), LoginActivity.class));
+            requireActivity().finish();
             return;
         }
 
         db = FirebaseFirestore.getInstance();
 
-        etSearch = findViewById(R.id.etSearch);
-        rvFeatured = findViewById(R.id.rvFeatured);
-        rvAll = findViewById(R.id.rvAll);
-        progress = findViewById(R.id.progress);
-        tvSectionFeatured = findViewById(R.id.tvSectionFeatured);
-        tvEmpty = findViewById(R.id.tvEmpty);
-        bottomNav = findViewById(R.id.bottomNav);
-        ImageButton btnProfile = findViewById(R.id.btnProfile);
-        ImageButton btnFilter = findViewById(R.id.btnFilter);
+        etSearch = view.findViewById(R.id.etSearch);
+        rvFeatured = view.findViewById(R.id.rvFeatured);
+        rvAll = view.findViewById(R.id.rvAll);
+        progress = view.findViewById(R.id.progress);
+        tvSectionFeatured = view.findViewById(R.id.tvSectionFeatured);
+        tvEmpty = view.findViewById(R.id.tvEmpty);
+        bottomNav = view.findViewById(R.id.bottomNav);
+        ImageButton btnProfile = view.findViewById(R.id.btnProfile);
+        ImageButton btnFilter = view.findViewById(R.id.btnFilter);
 
         rvFeatured.setLayoutManager(
-                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+                new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         rvFeatured.setAdapter(featuredAdapter);
 
-        rvAll.setLayoutManager(new LinearLayoutManager(this));
+        rvAll.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvAll.setAdapter(allAdapter);
 
         Consumer<String> openDetail = id -> {
-            Intent i = new Intent(this, ActivityDetailActivity.class);
-            i.putExtra(ActivityDetailActivity.EXTRA_ACTIVITY_ID, id);
-            startActivity(i);
+            Bundle args = new Bundle();
+            args.putString(ActivityDetailFragment.ARG_ACTIVITY_ID, id);
+            Navigation.findNavController(view).navigate(
+                    R.id.action_exploreFragment_to_activityDetailFragment, args);
         };
         featuredAdapter.setOnItemClick(openDetail);
         allAdapter.setOnItemClick(openDetail);
@@ -131,32 +141,33 @@ public class ExploreActivity extends AppCompatActivity {
         btnFilter.setOnClickListener(v -> showFilterBottomSheet());
 
         btnProfile.setOnClickListener(v ->
-                Toast.makeText(this, R.string.explore_nav_profile, Toast.LENGTH_SHORT).show());
+                Toast.makeText(requireContext(), R.string.explore_nav_profile, Toast.LENGTH_SHORT).show());
 
         bottomNav.setSelectedItemId(R.id.nav_home);
         bottomNav.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                NestedScrollView scroll = findViewById(R.id.scrollContent);
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_home) {
+                NestedScrollView scroll = view.findViewById(R.id.scrollContent);
                 scroll.post(() -> scroll.scrollTo(0, 0));
                 return true;
             }
-            if (id == R.id.nav_search) {
+            if (itemId == R.id.nav_search) {
                 etSearch.requestFocus();
-                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                InputMethodManager imm = (InputMethodManager) requireContext()
+                        .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
                 if (imm != null) imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT);
                 return true;
             }
-            if (id == R.id.nav_list) {
-                NestedScrollView scroll = findViewById(R.id.scrollContent);
+            if (itemId == R.id.nav_list) {
+                NestedScrollView scroll = view.findViewById(R.id.scrollContent);
                 scroll.post(() -> {
                     int y = (int) rvAll.getY() - (int) (8 * getResources().getDisplayMetrics().density);
                     scroll.smoothScrollTo(0, Math.max(0, y));
                 });
                 return true;
             }
-            if (id == R.id.nav_profile) {
-                Toast.makeText(this, R.string.explore_nav_profile, Toast.LENGTH_SHORT).show();
+            if (itemId == R.id.nav_profile) {
+                Toast.makeText(requireContext(), R.string.explore_nav_profile, Toast.LENGTH_SHORT).show();
                 return true;
             }
             return false;
@@ -182,7 +193,7 @@ public class ExploreActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> {
                     progress.setVisibility(View.GONE);
-                    Toast.makeText(this, R.string.explore_load_error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(requireContext(), R.string.explore_load_error, Toast.LENGTH_LONG).show();
                 });
     }
 
@@ -241,8 +252,8 @@ public class ExploreActivity extends AppCompatActivity {
     }
 
     private void showFilterBottomSheet() {
-        BottomSheetDialog dialog = new BottomSheetDialog(this);
-        View root = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_filter_activities, null, false);
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View root = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_filter_activities, null, false);
         dialog.setContentView(root);
 
         Spinner spinnerDestination = root.findViewById(R.id.spinnerDestination);
@@ -268,7 +279,7 @@ public class ExploreActivity extends AppCompatActivity {
             destValues.add(d);
         }
         ArrayAdapter<String> destAdapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item, destLabels);
+                requireContext(), android.R.layout.simple_spinner_item, destLabels);
         destAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDestination.setAdapter(destAdapter);
         int destPos = 0;
@@ -394,15 +405,15 @@ public class ExploreActivity extends AppCompatActivity {
     }
 
     private void addFilterChip(ChipGroup group, String label, String tag, boolean select) {
-        Chip chip = new Chip(this);
+        Chip chip = new Chip(requireContext());
         chip.setText(label);
         chip.setCheckable(true);
         chip.setTag(tag);
-        chip.setChipBackgroundColor(ContextCompat.getColorStateList(this, R.color.filter_sheet_chip_background));
-        chip.setTextColor(ContextCompat.getColorStateList(this, R.color.filter_sheet_chip_text));
+        chip.setChipBackgroundColor(ContextCompat.getColorStateList(requireContext(), R.color.filter_sheet_chip_background));
+        chip.setTextColor(ContextCompat.getColorStateList(requireContext(), R.color.filter_sheet_chip_text));
         chip.setChipStrokeWidth(1f);
         chip.setChipStrokeColor(ColorStateList.valueOf(
-                ContextCompat.getColor(this, R.color.explore_chip_stroke)));
+                ContextCompat.getColor(requireContext(), R.color.explore_chip_stroke)));
         chip.setEnsureMinTouchTargetSize(false);
         group.addView(chip);
         if (select) {

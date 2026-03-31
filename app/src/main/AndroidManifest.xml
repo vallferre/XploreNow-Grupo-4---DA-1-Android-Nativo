@@ -25,14 +25,9 @@
         </activity>
         <!-- Register: sin intent-filter, se abre desde LoginActivity -->
         <activity android:name=".RegisterActivity" />
-        <!-- Home: sin intent-filter, se abre al autenticarse -->
-        <activity android:name=".MainActivity" />
+        <!-- Home con Navigation Component (explorar → detalle); se abre desde login/registro -->
         <activity
-            android:name=".ExploreActivity"
-            android:exported="false"
-            android:theme="@style/Theme.XploreNow" />
-        <activity
-            android:name=".ActivityDetailActivity"
+            android:name=".MainActivity"
             android:exported="false"
             android:theme="@style/Theme.XploreNow" />
     </application>
