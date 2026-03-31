@@ -3,26 +3,26 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/FirstFragment">
+    app:startDestination="@id/exploreFragment">
 
     <fragment
-        android:id="@+id/FirstFragment"
-        android:name="ar.edu.uadexplorenow.FirstFragment"
-        android:label="@string/first_fragment_label"
-        tools:layout="@layout/fragment_first">
-
+        android:id="@+id/exploreFragment"
+        android:name="ar.edu.uadexplorenow.ExploreFragment"
+        android:label="@string/explore_title"
+        tools:layout="@layout/activity_explore">
         <action
-            android:id="@+id/action_FirstFragment_to_SecondFragment"
-            app:destination="@id/SecondFragment" />
+            android:id="@+id/action_exploreFragment_to_activityDetailFragment"
+            app:destination="@id/activityDetailFragment" />
     </fragment>
-    <fragment
-        android:id="@+id/SecondFragment"
-        android:name="ar.edu.uadexplorenow.SecondFragment"
-        android:label="@string/second_fragment_label"
-        tools:layout="@layout/fragment_second">
 
-        <action
-            android:id="@+id/action_SecondFragment_to_FirstFragment"
-            app:destination="@id/FirstFragment" />
+    <fragment
+        android:id="@+id/activityDetailFragment"
+        android:name="ar.edu.uadexplorenow.ActivityDetailFragment"
+        android:label="@string/detail_screen_title"
+        tools:layout="@layout/activity_activity_detail">
+        <argument
+            android:name="activity_id"
+            app:argType="string"
+            app:nullable="false" />
     </fragment>
 </navigation>
