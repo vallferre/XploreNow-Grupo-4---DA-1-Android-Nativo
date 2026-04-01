@@ -1,4 +1,4 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.ui.explore;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -17,10 +17,18 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.viewpager2.widget.ViewPager2;
 
+import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
+import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.domain.ActivityDetail;
+
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ActivityDetailFragment extends Fragment {
 
@@ -87,17 +95,29 @@ public class ActivityDetailFragment extends Fragment {
         DetailPhotoAdapter photoAdapter = new DetailPhotoAdapter();
         photoPager.setAdapter(photoAdapter);
 
-        FirebaseFirestore.getInstance()
-                .collection("activities")
-                .document(activityId)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    ActivityDetail d = ActivityDetail.fromDocument(doc);
-                    if (d == null) {
-                        Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
-                        Navigation.findNavController(view).popBackStack();
-                        return;
-                    }
+        final String pathId = activityId;
+        RealtimeRetrofitClient.getApi().getActivity(activityId).enqueue(new Callback<ActivityRtdbDto>() {
+            @Override
+            public void onResponse(
+                    @NonNull Call<ActivityRtdbDto> call,
+                    @NonNull Response<ActivityRtdbDto> response
+            ) {
+                if (!isAdded()) return;
+                ActivityRtdbDto body = response.body();
+                if (!response.isSuccessful() || body == null) {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
+                    Navigation.findNavController(view).popBackStack();
+                    return;
+                }
+                ActivityDetail d = ActivityDetail.fromRtdbDto(body, pathId);
+                if (d == null) {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
+                    Navigation.findNavController(view).popBackStack();
+                    return;
+                }
+                try {
                     bindDetail(
                             d, photoPager, dotsContainer, photoAdapter,
                             tvHeroCategory, tvTitle, tvSubtitle, tvWhenLabel, tvActivityWhen,
@@ -108,11 +128,21 @@ public class ActivityDetailFragment extends Fragment {
                             tvBottomPrice);
                     progress.setVisibility(View.GONE);
                     contentRoot.setVisibility(View.VISIBLE);
-                })
-                .addOnFailureListener(e -> {
+                } catch (RuntimeException e) {
+                    progress.setVisibility(View.GONE);
                     Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
                     Navigation.findNavController(view).popBackStack();
-                });
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ActivityRtdbDto> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                progress.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
+                Navigation.findNavController(view).popBackStack();
+            }
+        });
     }
 
     private void bindDetail(

@@ -1,4 +1,4 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -14,6 +14,9 @@ import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+
+import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.ui.MainActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;

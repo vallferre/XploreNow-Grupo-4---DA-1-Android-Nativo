@@ -1,8 +1,10 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.ui;
 
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import ar.edu.uadexplorenow.R;
 
 /**
  * Pantalla principal tras el login: aloja el {@link androidx.navigation.fragment.NavHostFragment}

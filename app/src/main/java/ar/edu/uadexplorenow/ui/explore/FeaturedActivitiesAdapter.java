@@ -1,4 +1,4 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.ui.explore;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +8,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.domain.ActivityItem;
 
 import com.bumptech.glide.Glide;
 

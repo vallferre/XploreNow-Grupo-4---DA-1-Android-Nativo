@@ -11,7 +11,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:fillViewport="true"
+        android:fillViewport="false"
         android:paddingBottom="8dp"
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
@@ -23,7 +23,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingTop="16dp">
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -112,17 +113,15 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvFeatured"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="280dp"
                 android:layout_marginTop="10dp"
                 android:clipToPadding="false"
-                android:minHeight="248dp"
-                android:nestedScrollingEnabled="false"
-                android:orientation="horizontal"
                 android:paddingEnd="4dp"
                 tools:itemCount="1"
                 tools:listitem="@layout/item_featured_activity" />
 
             <TextView
+                android:id="@+id/tvSectionAll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
@@ -136,8 +135,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:background="@android:color/transparent"
+                android:clipToPadding="true"
                 android:nestedScrollingEnabled="false"
-                android:paddingBottom="16dp"
                 tools:itemCount="2"
                 tools:listitem="@layout/item_activity_row" />
 

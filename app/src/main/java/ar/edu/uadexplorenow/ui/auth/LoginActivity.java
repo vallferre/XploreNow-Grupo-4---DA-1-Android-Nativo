@@ -1,4 +1,4 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,6 +10,9 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+
+import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.ui.MainActivity;
 
 public class LoginActivity extends AppCompatActivity {
 

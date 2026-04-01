@@ -1,4 +1,4 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.ui.explore;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -8,6 +8,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -26,6 +27,12 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
+import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.domain.ActivityItem;
+import ar.edu.uadexplorenow.ui.auth.LoginActivity;
+
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -33,8 +40,8 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.slider.RangeSlider;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +51,10 @@ import java.util.Locale;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ExploreFragment extends Fragment {
 
     private static final String TAG_ALL = "";
@@ -52,7 +63,6 @@ public class ExploreFragment extends Fragment {
             "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"
     };
 
-    private FirebaseFirestore db;
     private final List<ActivityItem> allActivities = new ArrayList<>();
 
     private EditText etSearch;
@@ -60,8 +70,10 @@ public class ExploreFragment extends Fragment {
     private RecyclerView rvAll;
     private ProgressBar progress;
     private TextView tvSectionFeatured;
+    private TextView tvSectionAll;
     private TextView tvEmpty;
     private BottomNavigationView bottomNav;
+    private NestedScrollView scrollContent;
 
     private final FeaturedActivitiesAdapter featuredAdapter = new FeaturedActivitiesAdapter();
     private final AllActivitiesAdapter allAdapter = new AllActivitiesAdapter();
@@ -96,13 +108,13 @@ public class ExploreFragment extends Fragment {
             return;
         }
 
-        db = FirebaseFirestore.getInstance();
-
+        scrollContent = view.findViewById(R.id.scrollContent);
         etSearch = view.findViewById(R.id.etSearch);
         rvFeatured = view.findViewById(R.id.rvFeatured);
         rvAll = view.findViewById(R.id.rvAll);
         progress = view.findViewById(R.id.progress);
         tvSectionFeatured = view.findViewById(R.id.tvSectionFeatured);
+        tvSectionAll = view.findViewById(R.id.tvSectionAll);
         tvEmpty = view.findViewById(R.id.tvEmpty);
         bottomNav = view.findViewById(R.id.bottomNav);
         ImageButton btnProfile = view.findViewById(R.id.btnProfile);
@@ -114,6 +126,7 @@ public class ExploreFragment extends Fragment {
 
         rvAll.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvAll.setAdapter(allAdapter);
+        rvAll.setItemAnimator(null);
 
         Consumer<String> openDetail = id -> {
             Bundle args = new Bundle();
@@ -147,8 +160,9 @@ public class ExploreFragment extends Fragment {
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.nav_home) {
-                NestedScrollView scroll = view.findViewById(R.id.scrollContent);
-                scroll.post(() -> scroll.scrollTo(0, 0));
+                if (scrollContent != null) {
+                    scrollContent.post(() -> scrollContent.smoothScrollTo(0, 0));
+                }
                 return true;
             }
             if (itemId == R.id.nav_search) {
@@ -159,11 +173,9 @@ public class ExploreFragment extends Fragment {
                 return true;
             }
             if (itemId == R.id.nav_list) {
-                NestedScrollView scroll = view.findViewById(R.id.scrollContent);
-                scroll.post(() -> {
-                    int y = (int) rvAll.getY() - (int) (8 * getResources().getDisplayMetrics().density);
-                    scroll.smoothScrollTo(0, Math.max(0, y));
-                });
+                if (tvSectionAll != null) {
+                    scrollExploreTo(tvSectionAll);
+                }
                 return true;
             }
             if (itemId == R.id.nav_profile) {
@@ -178,23 +190,30 @@ public class ExploreFragment extends Fragment {
 
     private void loadActivities() {
         progress.setVisibility(View.VISIBLE);
-        db.collection("activities")
-                .get()
-                .addOnSuccessListener(query -> {
-                    allActivities.clear();
-                    for (QueryDocumentSnapshot doc : query) {
-                        ActivityItem item = ActivityItem.fromDocument(doc);
-                        if (item != null) allActivities.add(item);
-                    }
-                    Collections.sort(allActivities, (a, b) -> a.name.compareToIgnoreCase(b.name));
-                    recomputeCatalogMaxPrice();
-                    applyFilters();
-                    progress.setVisibility(View.GONE);
-                })
-                .addOnFailureListener(e -> {
-                    progress.setVisibility(View.GONE);
+        Gson gson = RealtimeRetrofitClient.gson();
+        RealtimeRetrofitClient.getApi().getActivities().enqueue(new Callback<JsonElement>() {
+            @Override
+            public void onResponse(@NonNull Call<JsonElement> call, @NonNull Response<JsonElement> response) {
+                if (!isAdded()) return;
+                progress.setVisibility(View.GONE);
+                if (!response.isSuccessful() || response.body() == null) {
                     Toast.makeText(requireContext(), R.string.explore_load_error, Toast.LENGTH_LONG).show();
-                });
+                    return;
+                }
+                allActivities.clear();
+                allActivities.addAll(ActivityRtdbMapper.toActivityItems(response.body(), gson));
+                Collections.sort(allActivities, (a, b) -> a.name.compareToIgnoreCase(b.name));
+                recomputeCatalogMaxPrice();
+                applyFilters();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<JsonElement> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                progress.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), R.string.explore_load_error, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void recomputeCatalogMaxPrice() {
@@ -249,6 +268,82 @@ public class ExploreFragment extends Fragment {
 
         tvEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
         rvAll.setVisibility(filtered.isEmpty() ? View.GONE : View.VISIBLE);
+
+        updateAllListHeightForNestedScroll(filtered);
+
+        if (scrollContent != null) {
+            scrollContent.post(() -> {
+                rvAll.requestLayout();
+                scrollContent.requestLayout();
+            });
+        }
+    }
+
+    /**
+     * Fija la altura del {@link RecyclerView} sumando cada fila medida con los mismos textos que en pantalla
+     * (títulos de 2 líneas, cupos, etc.); una sola altura × N subestimaba y cortaba el último ítem.
+     */
+    private void updateAllListHeightForNestedScroll(@NonNull List<ActivityItem> filteredItems) {
+        final ArrayList<ActivityItem> copy = new ArrayList<>(filteredItems);
+        rvAll.post(new Runnable() {
+            int attempts = 0;
+
+            @Override
+            public void run() {
+                if (!isAdded()) return;
+                ViewGroup.LayoutParams lp = rvAll.getLayoutParams();
+                if (copy.isEmpty()) {
+                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    rvAll.setLayoutParams(lp);
+                    return;
+                }
+                int w = rvAll.getWidth();
+                if (w <= 0 && attempts++ < 25) {
+                    rvAll.post(this);
+                    return;
+                }
+                if (w <= 0) return;
+                LayoutInflater inflater = LayoutInflater.from(requireContext());
+                int total = 0;
+                for (ActivityItem a : copy) {
+                    total += AllActivitiesAdapter.measureVerticalSpanForItem(a, w, inflater, rvAll);
+                }
+                int paddingV = rvAll.getPaddingTop() + rvAll.getPaddingBottom();
+                lp.height = total + paddingV;
+                rvAll.setLayoutParams(lp);
+            }
+        });
+    }
+
+    private void scrollExploreTo(@NonNull View anchor) {
+        if (scrollContent == null) return;
+        scrollContent.post(() -> {
+            if (!isAdded()) return;
+            int y = offsetTopFromScrollChild(anchor);
+            int pad = (int) (8 * getResources().getDisplayMetrics().density);
+            scrollContent.smoothScrollTo(0, Math.max(0, y - pad));
+        });
+    }
+
+    /**
+     * Offset del borde superior del {@link #scrollContent} contenido hasta {@code v}.
+     */
+    private int offsetTopFromScrollChild(@NonNull View v) {
+        int y = 0;
+        View current = v;
+        while (true) {
+            ViewParent parent = current.getParent();
+            if (!(parent instanceof View)) {
+                break;
+            }
+            View pv = (View) parent;
+            y += current.getTop();
+            if (pv.getParent() == scrollContent) {
+                break;
+            }
+            current = pv;
+        }
+        return y;
     }
 
     private void showFilterBottomSheet() {
