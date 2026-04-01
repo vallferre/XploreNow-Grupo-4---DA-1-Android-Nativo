@@ -1,7 +1,9 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.domain;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -157,6 +159,82 @@ public final class ActivityDetail {
                 urls, parseStringList(doc.get("includes")), parseStringList(doc.get("language")),
                 day, dateIso, policy
         );
+    }
+
+    /**
+     * Detalle desde JSON de Realtime Database (misma forma de campos que Firestore).
+     */
+    @Nullable
+    public static ActivityDetail fromRtdbDto(@Nullable ActivityRtdbDto raw, @NonNull String pathId) {
+        if (raw == null || raw.name == null || raw.name.isEmpty()) return null;
+
+        String stableId = (raw.id != null && !raw.id.isEmpty()) ? raw.id : pathId;
+        String destination = str(raw.destination);
+        String category = str(raw.category);
+        long duration = raw.durationMinutes != null ? raw.durationMinutes : 0L;
+        double price = raw.price != null ? raw.price : 0;
+        String currency = str(raw.currency);
+        long spots = raw.availableSpots != null ? raw.availableSpots : 0L;
+        double rating = raw.rating != null ? raw.rating : 0;
+        long reviews = raw.reviewCount != null ? raw.reviewCount : 0L;
+        String guide = str(raw.guideName);
+        String meeting = str(raw.meetingPoint);
+        String desc = str(raw.description);
+        if (desc.isEmpty()) {
+            desc = buildFallbackDescription(raw.name, destination, category);
+        }
+        String day = str(raw.day);
+        String dateIso = str(raw.date);
+
+        CancellationPolicy policy = null;
+        if (raw.cancellationPolicy != null) {
+            ActivityRtdbDto.CancellationDto c = raw.cancellationPolicy;
+            CancellationPolicy p = new CancellationPolicy(
+                    str(c.type),
+                    str(c.description),
+                    c.freeCancelHours != null ? c.freeCancelHours : 0L);
+            if (p.hasContent()) policy = p;
+        }
+
+        String cover = str(raw.coverImageUrl);
+        LinkedHashSet<String> ordered = new LinkedHashSet<>();
+        if (!cover.isEmpty()) ordered.add(cover);
+        ordered.addAll(parsePhotoUrlsFromRtdb(raw.photos));
+        List<String> urls = new ArrayList<>(ordered);
+
+        List<String> includes = new ArrayList<>();
+        if (raw.includes != null) {
+            for (String s : raw.includes) {
+                if (s != null && !s.isEmpty()) includes.add(s);
+            }
+        }
+        List<String> langs = new ArrayList<>();
+        if (raw.language != null) {
+            for (String s : raw.language) {
+                if (s != null && !s.isEmpty()) langs.add(s);
+            }
+        }
+
+        return new ActivityDetail(
+                stableId, raw.name, destination, category, duration, price, currency,
+                spots, rating, reviews, guide, meeting, desc,
+                urls, includes, langs,
+                day, dateIso, policy
+        );
+    }
+
+    private static List<String> parsePhotoUrlsFromRtdb(@Nullable List<ActivityRtdbDto.PhotoDto> photos) {
+        List<String> out = new ArrayList<>();
+        if (photos == null) return out;
+        List<MapSort> tmp = new ArrayList<>();
+        for (ActivityRtdbDto.PhotoDto p : photos) {
+            if (p == null || p.url == null || p.url.isEmpty()) continue;
+            long order = p.order != null ? p.order : 0L;
+            tmp.add(new MapSort(order, p.url));
+        }
+        Collections.sort(tmp, Comparator.comparingLong(a -> a.order));
+        for (MapSort e : tmp) out.add(e.url);
+        return out;
     }
 
     /**

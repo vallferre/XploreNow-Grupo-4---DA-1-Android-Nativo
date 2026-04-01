@@ -1,4 +1,4 @@
-package ar.edu.uadexplorenow;
+package ar.edu.uadexplorenow.domain;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/exploreFragment"
-        android:name="ar.edu.uadexplorenow.ExploreFragment"
+        android:name="ar.edu.uadexplorenow.ui.explore.ExploreFragment"
         android:label="@string/explore_title"
         tools:layout="@layout/activity_explore">
         <action
@@ -17,7 +17,7 @@
 
     <fragment
         android:id="@+id/activityDetailFragment"
-        android:name="ar.edu.uadexplorenow.ActivityDetailFragment"
+        android:name="ar.edu.uadexplorenow.ui.explore.ActivityDetailFragment"
         android:label="@string/detail_screen_title"
         tools:layout="@layout/activity_activity_detail">
         <argument
