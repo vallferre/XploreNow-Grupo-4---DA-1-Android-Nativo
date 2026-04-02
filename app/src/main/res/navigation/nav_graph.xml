@@ -3,7 +3,40 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/exploreFragment">
+    app:startDestination="@id/loginFragment">
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="ar.edu.uadexplorenow.ui.auth.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
+
+        <!-- Ir al registro -->
+        <action
+            android:id="@+id/action_login_to_register"
+            app:destination="@id/registerFragment" />
+
+        <!-- Login exitoso → home (limpia el stack de auth) -->
+        <action
+            android:id="@+id/action_auth_to_home"
+            app:destination="@id/exploreFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="ar.edu.uadexplorenow.ui.auth.RegisterFragment"
+        android:label="Registro"
+        tools:layout="@layout/fragment_register">
+
+        <!-- Registro exitoso → home (también limpia auth) -->
+        <action
+            android:id="@+id/action_auth_to_home"
+            app:destination="@id/exploreFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
 
     <fragment
         android:id="@+id/exploreFragment"

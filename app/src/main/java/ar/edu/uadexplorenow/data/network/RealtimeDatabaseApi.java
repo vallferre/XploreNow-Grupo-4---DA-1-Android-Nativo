@@ -4,8 +4,11 @@ import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
 
 import com.google.gson.JsonElement;
 
+import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 
 /**
@@ -18,4 +21,10 @@ public interface RealtimeDatabaseApi {
 
     @GET("activities/{id}.json")
     Call<ActivityRtdbDto> getActivity(@Path("id") String id);
+
+    @GET("users/{uid}.json")
+    Call<UserRtdbDto> getUser(@Path("uid") String uid);
+
+    @PUT("users/{uid}.json")
+    Call<UserRtdbDto> putUser(@Path("uid") String uid, @Body UserRtdbDto user);
 }
