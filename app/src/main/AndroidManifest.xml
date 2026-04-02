@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.XploreNow">
         <activity
-            android:name=".ui.auth.LoginActivity"
+            android:name=".ui.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.XploreNow">
             <intent-filter>
@@ -23,13 +23,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Register: sin intent-filter, se abre desde LoginActivity -->
-        <activity android:name=".ui.auth.RegisterActivity" />
-        <!-- Home con Navigation Component (explorar → detalle); se abre desde login/registro -->
-        <activity
-            android:name=".ui.MainActivity"
-            android:exported="false"
-            android:theme="@style/Theme.XploreNow" />
     </application>
 
 

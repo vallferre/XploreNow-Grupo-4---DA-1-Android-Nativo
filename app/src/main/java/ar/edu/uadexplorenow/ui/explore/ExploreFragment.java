@@ -31,7 +31,7 @@ import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
 import ar.edu.uadexplorenow.domain.ActivityItem;
-import ar.edu.uadexplorenow.ui.auth.LoginActivity;
+import ar.edu.uadexplorenow.ui.auth.LoginFragment;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -103,8 +103,7 @@ public class ExploreFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            startActivity(new Intent(requireContext(), LoginActivity.class));
-            requireActivity().finish();
+            Navigation.findNavController(view).navigate(R.id.action_exploreFragment_to_activityDetailFragment);
             return;
         }
 
