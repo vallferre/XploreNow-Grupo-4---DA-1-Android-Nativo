@@ -43,11 +43,11 @@
 
                 <ImageButton
                     android:id="@+id/btnProfile"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/explore_nav_profile"
-                    android:padding="8dp"
+                    android:padding="6dp"
                     android:src="@drawable/ic_nav_person"
                     android:tint="@color/explore_title" />
             </LinearLayout>

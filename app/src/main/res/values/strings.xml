@@ -106,4 +106,39 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
+    <string name="profile_title">Perfil</string>
+    <string name="profile_subtitle">Administra tus datos y preferencias de viaje</string>
+    <string name="profile_label_name">Nombre</string>
+    <string name="profile_label_email">Email</string>
+    <string name="profile_email_hint">Tu email</string>
+    <string name="profile_label_phone">Telefono de contacto</string>
+    <string name="profile_label_photo">Foto de perfil</string>
+    <string name="profile_photo_hint">URL publica de tu foto (opcional)</string>
+    <string name="profile_photo_help">Se guarda como URL opcional. No sube archivos desde la app.</string>
+    <string name="profile_photo_invalid">Ingresa una URL publica valida con https o deja el campo vacio.</string>
+    <string name="profile_label_preferences">Preferencias de viaje</string>
+    <string name="profile_preferences_help">Selecciona una o mas opciones fijas.</string>
+    <string name="profile_pref_aventura">Aventura</string>
+    <string name="profile_pref_cultura">Cultura</string>
+    <string name="profile_pref_gastronomia">Gastronomia</string>
+    <string name="profile_pref_naturaleza">Naturaleza</string>
+    <string name="profile_pref_relax">Relax</string>
+    <string name="profile_preferences_legacy_fmt">Preferencias anteriores preservadas: %1$s</string>
+    <string name="profile_activity_summary_title">Resumen de actividades</string>
+    <string name="profile_activity_summary_help">Lee datos opcionales del historial del usuario en Firebase.</string>
+    <string name="profile_summary_reserved">Reservadas</string>
+    <string name="profile_summary_completed">Realizadas</string>
+    <string name="profile_phone_hint">Tu telefono</string>
+    <string name="profile_save">Guardar perfil</string>
+    <string name="profile_saved">Perfil actualizado</string>
+    <string name="profile_load_error">No se pudo cargar el perfil</string>
+    <string name="profile_save_error">No se pudo guardar el perfil</string>
+    <string name="profile_email_empty">Sin email</string>
+    <string name="profile_email_already_in_use">Ese email ya esta en uso por otra cuenta.</string>
+    <string name="profile_email_update_error">No se pudo actualizar el email.</string>
+    <string name="profile_email_recent_login_required">Para cambiar el email, volve a iniciar sesion e intentalo de nuevo.</string>
+    <string name="profile_email_verification_required">Firebase requiere verificar el nuevo email antes de aplicarlo. Revisá tu bandeja y confirmá el cambio.</string>
+    <string name="profile_email_verification_sent">Te enviamos un correo al nuevo email. El cambio se aplicara cuando confirmes ese enlace y vuelvas a iniciar sesion.</string>
+    <string name="profile_back">Volver</string>
+    <string name="profile_logout">Desconectar</string>
 </resources>

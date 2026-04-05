@@ -23,12 +23,15 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
+import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
 import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.ui.auth.LoginFragment;
@@ -46,8 +49,10 @@ import com.google.gson.JsonElement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
@@ -58,12 +63,18 @@ import retrofit2.Response;
 public class ExploreFragment extends Fragment {
 
     private static final String TAG_ALL = "";
+    private static final String PREF_AVENTURA = "aventura";
+    private static final String PREF_CULTURA = "cultura";
+    private static final String PREF_GASTRONOMIA = "gastronomia";
+    private static final String PREF_NATURALEZA = "naturaleza";
+    private static final String PREF_RELAX = "relax";
 
     private static final String[] DAY_ORDER_NORM = {
             "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"
     };
 
     private final List<ActivityItem> allActivities = new ArrayList<>();
+    private final LinkedHashSet<String> userPreferenceKeys = new LinkedHashSet<>();
 
     private EditText etSearch;
     private RecyclerView rvFeatured;
@@ -74,6 +85,7 @@ public class ExploreFragment extends Fragment {
     private TextView tvEmpty;
     private BottomNavigationView bottomNav;
     private NestedScrollView scrollContent;
+    private ImageButton btnProfile;
 
     private final FeaturedActivitiesAdapter featuredAdapter = new FeaturedActivitiesAdapter();
     private final AllActivitiesAdapter allAdapter = new AllActivitiesAdapter();
@@ -87,6 +99,7 @@ public class ExploreFragment extends Fragment {
     private double filterPriceMax = 0;
 
     private double catalogMaxPrice = 80_000;
+    private boolean hasUsefulUserPreferences;
 
     @Nullable
     @Override
@@ -103,7 +116,10 @@ public class ExploreFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            Navigation.findNavController(view).navigate(R.id.action_exploreFragment_to_activityDetailFragment);
+            NavOptions navOptions = new NavOptions.Builder()
+                    .setPopUpTo(R.id.exploreFragment, true)
+                    .build();
+            Navigation.findNavController(view).navigate(R.id.loginFragment, null, navOptions);
             return;
         }
 
@@ -116,7 +132,7 @@ public class ExploreFragment extends Fragment {
         tvSectionAll = view.findViewById(R.id.tvSectionAll);
         tvEmpty = view.findViewById(R.id.tvEmpty);
         bottomNav = view.findViewById(R.id.bottomNav);
-        ImageButton btnProfile = view.findViewById(R.id.btnProfile);
+        btnProfile = view.findViewById(R.id.btnProfile);
         ImageButton btnFilter = view.findViewById(R.id.btnFilter);
 
         rvFeatured.setLayoutManager(
@@ -152,8 +168,7 @@ public class ExploreFragment extends Fragment {
 
         btnFilter.setOnClickListener(v -> showFilterBottomSheet());
 
-        btnProfile.setOnClickListener(v ->
-                Toast.makeText(requireContext(), R.string.explore_nav_profile, Toast.LENGTH_SHORT).show());
+        btnProfile.setOnClickListener(v -> navigateToProfile(view));
 
         bottomNav.setSelectedItemId(R.id.nav_home);
         bottomNav.setOnItemSelectedListener(item -> {
@@ -178,12 +193,13 @@ public class ExploreFragment extends Fragment {
                 return true;
             }
             if (itemId == R.id.nav_profile) {
-                Toast.makeText(requireContext(), R.string.explore_nav_profile, Toast.LENGTH_SHORT).show();
+                navigateToProfile(view);
                 return true;
             }
             return false;
         });
 
+        loadUserPreferences(FirebaseAuth.getInstance().getCurrentUser().getUid());
         loadActivities();
     }
 
@@ -253,10 +269,7 @@ public class ExploreFragment extends Fragment {
             filtered.add(a);
         }
 
-        List<ActivityItem> featured = new ArrayList<>();
-        for (ActivityItem a : filtered) {
-            if (a.featured) featured.add(a);
-        }
+        List<ActivityItem> featured = buildRecommendedActivities(filtered);
 
         featuredAdapter.submit(featured);
         allAdapter.submit(filtered);
@@ -275,6 +288,174 @@ public class ExploreFragment extends Fragment {
                 rvAll.requestLayout();
                 scrollContent.requestLayout();
             });
+        }
+    }
+
+    private void loadUserPreferences(@NonNull String uid) {
+        RealtimeRetrofitClient.getApi().getUser(uid).enqueue(new Callback<UserRtdbDto>() {
+            @Override
+            public void onResponse(@NonNull Call<UserRtdbDto> call, @NonNull Response<UserRtdbDto> response) {
+                if (!isAdded()) return;
+                UserRtdbDto user = response.body();
+                applyUserPreferences(user);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<UserRtdbDto> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                userPreferenceKeys.clear();
+                hasUsefulUserPreferences = false;
+                updateProfileButtonPhoto(null);
+                applyFilters();
+            }
+        });
+    }
+
+    private void applyUserPreferences(@Nullable UserRtdbDto user) {
+        userPreferenceKeys.clear();
+        hasUsefulUserPreferences = false;
+        if (user != null) {
+            collectPreferenceKeys(user.preferences);
+            collectPreferenceKeys(user.legacyPreferences);
+        }
+        hasUsefulUserPreferences = !userPreferenceKeys.isEmpty();
+        updateProfileButtonPhoto(user != null ? user.photoUrl : null);
+        applyFilters();
+    }
+
+    private void updateProfileButtonPhoto(@Nullable String photoUrl) {
+        if (!isAdded() || btnProfile == null) return;
+
+        String safePhotoUrl = photoUrl != null ? photoUrl.trim() : "";
+        if (safePhotoUrl.isEmpty()) {
+            Glide.with(this).clear(btnProfile);
+            btnProfile.setScaleType(ImageButton.ScaleType.CENTER_INSIDE);
+            btnProfile.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+            btnProfile.setImageResource(R.drawable.ic_nav_person);
+            btnProfile.setImageTintList(ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.explore_title)));
+            return;
+        }
+
+        btnProfile.setPadding(0, 0, 0, 0);
+        btnProfile.setScaleType(ImageButton.ScaleType.CENTER_CROP);
+        btnProfile.setImageTintList(null);
+        Glide.with(this)
+                .load(safePhotoUrl)
+                .circleCrop()
+                .placeholder(R.drawable.ic_nav_person)
+                .error(R.drawable.ic_nav_person)
+                .into(btnProfile);
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    private void collectPreferenceKeys(@Nullable List<String> rawPreferences) {
+        if (rawPreferences == null) return;
+        for (String raw : rawPreferences) {
+            String canonical = canonicalPreference(raw);
+            if (canonical != null) {
+                userPreferenceKeys.add(canonical);
+            }
+        }
+    }
+
+    @NonNull
+    private List<ActivityItem> buildRecommendedActivities(@NonNull List<ActivityItem> filtered) {
+        if (!hasUsefulUserPreferences) {
+            return buildFeaturedFallback(filtered);
+        }
+
+        List<ActivityItem> recommended = new ArrayList<>();
+        for (ActivityItem a : filtered) {
+            int score = recommendationScore(a, userPreferenceKeys);
+            if (score > 0) {
+                recommended.add(a);
+            }
+        }
+
+        if (recommended.isEmpty()) {
+            return buildFeaturedFallback(filtered);
+        }
+
+        recommended.sort((a, b) -> {
+            int scoreCompare = Integer.compare(
+                    recommendationScore(b, userPreferenceKeys),
+                    recommendationScore(a, userPreferenceKeys));
+            if (scoreCompare != 0) return scoreCompare;
+            int ratingCompare = Double.compare(b.rating, a.rating);
+            if (ratingCompare != 0) return ratingCompare;
+            return a.name.compareToIgnoreCase(b.name);
+        });
+        return recommended;
+    }
+
+    @NonNull
+    private List<ActivityItem> buildFeaturedFallback(@NonNull List<ActivityItem> filtered) {
+        List<ActivityItem> featured = new ArrayList<>();
+        for (ActivityItem a : filtered) {
+            if (a.featured) featured.add(a);
+        }
+        return featured;
+    }
+
+    private int recommendationScore(@NonNull ActivityItem activity, @NonNull Set<String> preferences) {
+        boolean categoryMatch = activityMatchesPreferences(activity, preferences);
+        if (!categoryMatch && !activity.featured) return 0;
+
+        int score = 0;
+        if (categoryMatch) score += 2;
+        if (activity.featured) score += 1;
+        return score;
+    }
+
+    private boolean activityMatchesPreferences(@NonNull ActivityItem activity, @NonNull Set<String> preferences) {
+        if (preferences.isEmpty()) return false;
+        String category = activity.category != null ? activity.category.trim().toLowerCase(Locale.ROOT) : "";
+        switch (category) {
+            case "aventura":
+                return preferences.contains(PREF_AVENTURA);
+            case "gastronomica":
+                return preferences.contains(PREF_GASTRONOMIA);
+            case "free_tour":
+            case "visita_guiada":
+                return preferences.contains(PREF_CULTURA);
+            case "excursion":
+                return preferences.contains(PREF_NATURALEZA);
+            default:
+                return false;
+        }
+    }
+
+    @Nullable
+    private String canonicalPreference(@Nullable String raw) {
+        if (raw == null) return null;
+        String normalized = ActivityItem.normalizeDay(raw)
+                .replace("á", "a")
+                .replace("é", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ú", "u");
+        switch (normalized) {
+            case PREF_AVENTURA:
+            case "aventuras":
+                return PREF_AVENTURA;
+            case PREF_CULTURA:
+            case "cultural":
+                return PREF_CULTURA;
+            case PREF_GASTRONOMIA:
+            case "gastronomica":
+                return PREF_GASTRONOMIA;
+            case PREF_NATURALEZA:
+            case "natural":
+                return PREF_NATURALEZA;
+            case PREF_RELAX:
+            case "descanso":
+                return PREF_RELAX;
+            default:
+                return null;
         }
     }
 
@@ -474,6 +655,10 @@ public class ExploreFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private void navigateToProfile(@NonNull View view) {
+        Navigation.findNavController(view).navigate(R.id.action_exploreFragment_to_profileFragment);
     }
 
     private void ensureChipGroupSelection(ChipGroup group) {
