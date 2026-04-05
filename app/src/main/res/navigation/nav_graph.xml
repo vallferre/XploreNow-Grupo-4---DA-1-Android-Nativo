@@ -46,7 +46,16 @@
         <action
             android:id="@+id/action_exploreFragment_to_activityDetailFragment"
             app:destination="@id/activityDetailFragment" />
+        <action
+            android:id="@+id/action_exploreFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="ar.edu.uadexplorenow.ui.profile.ProfileFragment"
+        android:label="@string/profile_title"
+        tools:layout="@layout/fragment_profile" />
 
     <fragment
         android:id="@+id/activityDetailFragment"

@@ -8,8 +8,11 @@ import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.PATCH;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
+
+import java.util.Map;
 
 /**
  * REST de Firebase Realtime Database (rutas terminadas en {@code .json}).
@@ -27,4 +30,7 @@ public interface RealtimeDatabaseApi {
 
     @PUT("users/{uid}.json")
     Call<UserRtdbDto> putUser(@Path("uid") String uid, @Body UserRtdbDto user);
+
+    @PATCH("users/{uid}.json")
+    Call<Void> patchUser(@Path("uid") String uid, @Body Map<String, Object> updates);
 }
