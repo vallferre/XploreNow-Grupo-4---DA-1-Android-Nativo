@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
 import retrofit2.Call;
@@ -75,6 +76,10 @@ public class ProfileFragment extends Fragment {
     private boolean canSaveProfile;
     private final List<String> preservedLegacyPreferences = new ArrayList<>();
 
+    // UID y email efectivos: para login OTP difieren del user anónimo de Firebase Auth.
+    private String effectiveUid;
+    private String effectiveEmail;
+
     @Nullable
     @Override
     public View onCreateView(
@@ -94,6 +99,12 @@ public class ProfileFragment extends Fragment {
             Navigation.findNavController(view).popBackStack();
             return;
         }
+
+        // Resolvemos las credenciales efectivas una sola vez.
+        // Para login clásico coinciden con currentUser; para login OTP apuntan
+        // al usuario real guardado por SessionStore.
+        effectiveUid   = SessionStore.getEffectiveUid(requireContext(), currentUser);
+        effectiveEmail = SessionStore.getEffectiveEmail(requireContext(), currentUser);
 
         ImageButton btnBack = view.findViewById(R.id.btnBack);
         etName = view.findViewById(R.id.etName);
@@ -140,14 +151,14 @@ public class ProfileFragment extends Fragment {
     }
 
     private void fetchProfile(@NonNull FirebaseUser currentUser) {
-        RealtimeRetrofitClient.getApi().getUser(currentUser.getUid()).enqueue(new Callback<UserRtdbDto>() {
+        RealtimeRetrofitClient.getApi().getUser(effectiveUid).enqueue(new Callback<UserRtdbDto>() {
             @Override
             public void onResponse(@NonNull Call<UserRtdbDto> call, @NonNull Response<UserRtdbDto> response) {
                 if (!isAdded()) return;
                 UserRtdbDto body = response.body();
                 loadedUser = body != null ? body : buildFallbackUser(currentUser);
-                if (isBlank(loadedUser.id)) loadedUser.id = currentUser.getUid();
-                if (isBlank(loadedUser.email)) loadedUser.email = safe(currentUser.getEmail());
+                if (isBlank(loadedUser.id))    loadedUser.id    = effectiveUid;
+                if (isBlank(loadedUser.email)) loadedUser.email = effectiveEmail;
                 if (loadedUser.preferences == null) loadedUser.preferences = new ArrayList<>();
                 if (loadedUser.legacyPreferences == null) loadedUser.legacyPreferences = new ArrayList<>();
                 if (loadedUser.phone == null) loadedUser.phone = "";
@@ -197,7 +208,7 @@ public class ProfileFragment extends Fragment {
         }
 
         UserRtdbDto dto = loadedUser != null ? loadedUser : buildFallbackUser(currentUser);
-        String currentEmail = safe(currentUser.getEmail());
+        String currentEmail = !isBlank(effectiveEmail) ? effectiveEmail : safe(currentUser.getEmail());
         if (isBlank(currentEmail)) currentEmail = safe(dto.email);
         final String appliedCurrentEmail = currentEmail;
         String photoUrl = etPhotoUrl.getText().toString().trim();
@@ -272,7 +283,7 @@ public class ProfileFragment extends Fragment {
             @NonNull List<String> legacyPreferences
     ) {
         Map<String, Object> updates = new LinkedHashMap<>();
-        updates.put("id", currentUser.getUid());
+        updates.put("id", effectiveUid);
         updates.put("email", email);
         updates.put("name", name);
         updates.put("phone", phone);
@@ -282,7 +293,7 @@ public class ProfileFragment extends Fragment {
             updates.put("legacy_preferences", legacyPreferences);
         }
 
-        RealtimeRetrofitClient.getApi().patchUser(currentUser.getUid(), updates)
+        RealtimeRetrofitClient.getApi().patchUser(effectiveUid, updates)
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
@@ -292,7 +303,7 @@ public class ProfileFragment extends Fragment {
                             Toast.makeText(requireContext(), R.string.profile_save_error, Toast.LENGTH_LONG).show();
                             return;
                         }
-                        dto.id = currentUser.getUid();
+                        dto.id = effectiveUid;
                         dto.email = email;
                         dto.name = name;
                         dto.phone = phone;
@@ -325,7 +336,7 @@ public class ProfileFragment extends Fragment {
         dto.email = authEmail;
         Map<String, Object> updates = new LinkedHashMap<>();
         updates.put("email", authEmail);
-        RealtimeRetrofitClient.getApi().patchUser(currentUser.getUid(), updates)
+        RealtimeRetrofitClient.getApi().patchUser(effectiveUid, updates)
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
@@ -344,9 +355,9 @@ public class ProfileFragment extends Fragment {
     @NonNull
     private UserRtdbDto buildFallbackUser(@NonNull FirebaseUser currentUser) {
         UserRtdbDto dto = new UserRtdbDto();
-        dto.id = currentUser.getUid();
-        dto.name = safe(currentUser.getDisplayName());
-        dto.email = safe(currentUser.getEmail());
+        dto.id    = effectiveUid;
+        dto.name  = safe(currentUser.getDisplayName());
+        dto.email = !isBlank(effectiveEmail) ? effectiveEmail : safe(currentUser.getEmail());
         dto.phone = "";
         dto.photoUrl = "";
         dto.preferences = new ArrayList<>();
@@ -559,6 +570,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void logout(@NonNull View view) {
+        SessionStore.clear(requireContext());
         FirebaseAuth.getInstance().signOut();
         NavOptions navOptions = new NavOptions.Builder()
                 .setPopUpTo(R.id.exploreFragment, true)
