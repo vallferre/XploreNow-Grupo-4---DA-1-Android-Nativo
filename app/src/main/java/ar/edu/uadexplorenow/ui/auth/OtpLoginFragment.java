@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.email.OtpEmailSender;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
 
@@ -230,13 +231,29 @@ public class OtpLoginFragment extends Fragment {
                 .putLong(KEY_EXPIRES, expiresAt)
                 .apply();
 
-        // ── MODO DEMO ──────────────────────────────────────────────────────────
-        // En producción el código se envía al email del usuario.
-        Snackbar.make(requireView(),
-                        getString(R.string.otp_demo_code, code),
-                        Snackbar.LENGTH_INDEFINITE)
-                .setAction("OK", v -> {})
-                .show();
+        // ── Envío de email ─────────────────────────────────────────────────────
+        OtpEmailSender.send(otpEmail, code, new OtpEmailSender.SendCallback() {
+            @Override public void onSuccess() {
+                if (!isAdded()) return;
+                Toast.makeText(requireContext(),
+                        getString(R.string.otp_sent_to, otpEmail),
+                        Toast.LENGTH_LONG).show();
+            }
+            @Override public void onNotConfigured() {
+                if (!isAdded()) return;
+                Snackbar.make(requireView(),
+                                getString(R.string.otp_demo_code, code),
+                                Snackbar.LENGTH_INDEFINITE)
+                        .setAction("OK", v -> {}).show();
+            }
+            @Override public void onFailure() {
+                if (!isAdded()) return;
+                Snackbar.make(requireView(),
+                                getString(R.string.otp_demo_code, code),
+                                Snackbar.LENGTH_INDEFINITE)
+                        .setAction("OK", v -> {}).show();
+            }
+        });
         // ──────────────────────────────────────────────────────────────────────
     }
 
