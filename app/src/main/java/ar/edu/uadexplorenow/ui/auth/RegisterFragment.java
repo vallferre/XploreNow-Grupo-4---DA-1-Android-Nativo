@@ -20,13 +20,17 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.email.OtpEmailSender;
+import ar.edu.uadexplorenow.data.model.OtpRecord;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
 
@@ -58,9 +62,9 @@ public class RegisterFragment extends Fragment {
     private FirebaseAuth   mAuth;
     private CountDownTimer countDownTimer;
 
-    // nombre e email guardados tras crear la cuenta, para pasarlos al home
     private String registeredName  = "";
     private String registeredEmail = "";
+    private String registeredUid   = "";   // UID del usuario recién creado en Firebase Auth
 
     private static final long OTP_EXPIRY_MS = 5 * 60 * 1000L;
 
@@ -115,7 +119,6 @@ public class RegisterFragment extends Fragment {
         etPassword        = view.findViewById(R.id.etPassword);
         etConfirmPassword = view.findViewById(R.id.etConfirmPassword);
         btnSendOtp        = view.findViewById(R.id.btnSendOtp);
-        //progressForm      = view.findViewById(R.id.progressForm);
 
         otpFields[0] = view.findViewById(R.id.etOtp1);
         otpFields[1] = view.findViewById(R.id.etOtp2);
@@ -127,7 +130,6 @@ public class RegisterFragment extends Fragment {
         tvTimer      = view.findViewById(R.id.tvTimer);
         btnVerify    = view.findViewById(R.id.btnVerify);
         btnResend    = view.findViewById(R.id.btnResend);
-        //progressOtp  = view.findViewById(R.id.progressOtp);
     }
 
     // ─── OTP fields ───────────────────────────────────────────────────────────
@@ -166,11 +168,8 @@ public class RegisterFragment extends Fragment {
         btnSendOtp.setOnClickListener(v -> attemptRegister());
         btnVerify.setOnClickListener(v -> attemptVerifyOtp(view));
         btnResend.setOnClickListener(v -> {
-            clearOtpFields();
-            Toast.makeText(requireContext(),
-                    getString(R.string.otp_resent), Toast.LENGTH_SHORT).show();
             btnResend.setEnabled(false);
-            startCountdown();
+            generateAndSaveOtp(registeredUid, true);
         });
         view.findViewById(R.id.tvGoToLogin).setOnClickListener(v ->
                 Navigation.findNavController(view).popBackStack());
@@ -203,12 +202,10 @@ public class RegisterFragment extends Fragment {
 
         setFormLoading(true);
 
-        // Paso 1: crear usuario en Firebase Auth
         mAuth.createUserWithEmailAndPassword(email, pass)
                 .addOnSuccessListener(authResult -> {
                     if (!isAdded()) return;
                     String uid = authResult.getUser().getUid();
-                    // Paso 2: guardar perfil en RTDB
                     saveUserToRtdb(uid, name, email);
                 })
                 .addOnFailureListener(e -> {
@@ -245,13 +242,15 @@ public class RegisterFragment extends Fragment {
                             return;
                         }
 
-                        // Guardamos para pasarlos al home después del OTP
                         registeredName  = name;
                         registeredEmail = email;
+                        registeredUid   = uid;
+
+                        // Guardar índice email → uid para el flujo de login con OTP
+                        saveEmailIndex(uid, email);
 
                         tvOtpEmail.setText(getString(R.string.otp_sent_to, email));
-                        showStep(STEP_OTP);
-                        startCountdown();
+                        generateAndSaveOtp(uid, false);
                     }
 
                     @Override
@@ -266,14 +265,185 @@ public class RegisterFragment extends Fragment {
                 });
     }
 
-    // ─── Paso 3: verificar OTP → home ─────────────────────────────────────────
+    // ─── Índice email → uid ───────────────────────────────────────────────────
+
+    /** Guarda la relación email → uid en RTDB para poder encontrar el perfil
+     *  de un usuario por su email durante el login con OTP.
+     *  Falla silenciosamente: no es crítico para completar el registro. */
+    private void saveEmailIndex(String uid, String email) {
+        String key = emailToKey(email);
+        RealtimeRetrofitClient.getApi()
+                .putEmailIndex(key, uid)
+                .enqueue(new Callback<String>() {
+                    @Override public void onResponse(@NonNull Call<String> call,
+                                                     @NonNull Response<String> response) {}
+                    @Override public void onFailure(@NonNull Call<String> call,
+                                                    @NonNull Throwable t) {}
+                });
+    }
+
+    static String emailToKey(String email) {
+        return email.toLowerCase()
+                .replace("@", "_at_")
+                .replace(".", "_dot_");
+    }
+
+    // ─── Paso 3: generar y guardar OTP en RTDB ────────────────────────────────
+
+    /**
+     * Genera un código OTP de 6 dígitos, lo almacena en Firebase RTDB bajo
+     * otp_codes/{uid}.json y lo muestra en un Snackbar (modo demo).
+     *
+     * En producción reemplazar el Snackbar por el envío real del código por email
+     * (ej: Firebase Cloud Functions + SendGrid / Mailgun).
+     *
+     * @param uid     UID del usuario autenticado en Firebase Auth
+     * @param isResend true si es un reenvío (ya está en el paso OTP), false si es la primera vez
+     */
+    private void generateAndSaveOtp(String uid, boolean isResend) {
+        String code = generateOtpCode();
+
+        OtpRecord record = new OtpRecord();
+        record.code      = code;
+        record.expiresAt = System.currentTimeMillis() + OTP_EXPIRY_MS;
+        record.used      = false;
+
+        RealtimeRetrofitClient.getApi()
+                .putOtpCode(uid, record)
+                .enqueue(new Callback<OtpRecord>() {
+
+                    @Override
+                    public void onResponse(@NonNull Call<OtpRecord> call,
+                                           @NonNull Response<OtpRecord> response) {
+                        if (!isAdded()) return;
+
+                        if (!response.isSuccessful()) {
+                            Toast.makeText(requireContext(),
+                                    getString(R.string.otp_error_network), Toast.LENGTH_LONG).show();
+                            if (isResend) btnResend.setEnabled(true);
+                            return;
+                        }
+
+                        // ── Envío de email ─────────────────────────────────
+                        String emailTarget = etEmail.getText().toString().trim();
+                        OtpEmailSender.send(emailTarget, code, new OtpEmailSender.SendCallback() {
+                            @Override public void onSuccess() {
+                                if (!isAdded()) return;
+                                Toast.makeText(requireContext(),
+                                        getString(R.string.otp_sent_to, emailTarget),
+                                        Toast.LENGTH_LONG).show();
+                            }
+                            @Override public void onNotConfigured() {
+                                if (!isAdded()) return;
+                                Snackbar.make(requireView(),
+                                                getString(R.string.otp_demo_code, code),
+                                                Snackbar.LENGTH_INDEFINITE)
+                                        .setAction("OK", v -> {}).show();
+                            }
+                            @Override public void onFailure() {
+                                if (!isAdded()) return;
+                                Snackbar.make(requireView(),
+                                                getString(R.string.otp_demo_code, code),
+                                                Snackbar.LENGTH_INDEFINITE)
+                                        .setAction("OK", v -> {}).show();
+                            }
+                        });
+                        // ──────────────────────────────────────────────────
+
+                        if (isResend) {
+                            clearOtpFields();
+                            Toast.makeText(requireContext(),
+                                    getString(R.string.otp_resent), Toast.LENGTH_SHORT).show();
+                        } else {
+                            showStep(STEP_OTP);
+                        }
+                        startCountdown();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<OtpRecord> call,
+                                          @NonNull Throwable t) {
+                        if (!isAdded()) return;
+                        Toast.makeText(requireContext(),
+                                getString(R.string.otp_error_network), Toast.LENGTH_LONG).show();
+                        if (isResend) btnResend.setEnabled(true);
+                    }
+                });
+    }
+
+    // ─── Paso 4: verificar OTP contra RTDB ───────────────────────────────────
 
     private void attemptVerifyOtp(View view) {
+        String entered = getEnteredOtp();
         setOtpLoading(true);
-        // TODO: reemplazar con llamada real al backend cuando esté disponible
-        if (!isAdded()) return;
-        setOtpLoading(false);
-        navigateToHome(view);
+
+        RealtimeRetrofitClient.getApi()
+                .getOtpCode(registeredUid)
+                .enqueue(new Callback<OtpRecord>() {
+
+                    @Override
+                    public void onResponse(@NonNull Call<OtpRecord> call,
+                                           @NonNull Response<OtpRecord> response) {
+                        if (!isAdded()) return;
+                        setOtpLoading(false);
+
+                        OtpRecord record = response.body();
+
+                        if (!response.isSuccessful() || record == null) {
+                            Toast.makeText(requireContext(),
+                                    getString(R.string.otp_error_not_found), Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        if (System.currentTimeMillis() > record.expiresAt) {
+                            Toast.makeText(requireContext(),
+                                    getString(R.string.otp_error_expired), Toast.LENGTH_SHORT).show();
+                            btnVerify.setEnabled(false);
+                            btnResend.setEnabled(true);
+                            return;
+                        }
+
+                        if (!entered.equals(record.code)) {
+                            Toast.makeText(requireContext(),
+                                    getString(R.string.otp_error_invalid), Toast.LENGTH_SHORT).show();
+                            clearOtpFields();
+                            return;
+                        }
+
+                        // Código correcto → eliminar registro y navegar al home
+                        deleteOtpAndNavigate(view);
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<OtpRecord> call,
+                                          @NonNull Throwable t) {
+                        if (!isAdded()) return;
+                        setOtpLoading(false);
+                        Toast.makeText(requireContext(),
+                                getString(R.string.otp_error_network), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void deleteOtpAndNavigate(View view) {
+        RealtimeRetrofitClient.getApi()
+                .deleteOtpCode(registeredUid)
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call,
+                                           @NonNull Response<Void> response) {
+                        if (!isAdded()) return;
+                        navigateToHome(view);
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call,
+                                          @NonNull Throwable t) {
+                        if (!isAdded()) return;
+                        // El OTP ya fue validado; navegamos aunque falle el borrado
+                        navigateToHome(view);
+                    }
+                });
     }
 
     // ─── Timer ────────────────────────────────────────────────────────────────
@@ -300,6 +470,16 @@ public class RegisterFragment extends Fragment {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private String generateOtpCode() {
+        return String.format(Locale.getDefault(), "%06d", new Random().nextInt(1_000_000));
+    }
+
+    private String getEnteredOtp() {
+        StringBuilder sb = new StringBuilder();
+        for (EditText f : otpFields) sb.append(f.getText().toString());
+        return sb.toString();
+    }
 
     private void setFormLoading(boolean loading) {
         if (progressForm != null) progressForm.setVisibility(loading ? View.VISIBLE : View.GONE);

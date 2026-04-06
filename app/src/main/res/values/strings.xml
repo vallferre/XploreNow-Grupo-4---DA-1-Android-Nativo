@@ -69,6 +69,19 @@
     <string name="otp_sent_to">Código enviado a %1$s</string>
     <string name="otp_resent">Código reenviado</string>
     <string name="otp_expired">Código expirado</string>
+    <string name="otp_error_invalid">Código incorrecto. Verificá los dígitos ingresados.</string>
+    <string name="otp_error_expired">El código expiró. Solicitá uno nuevo.</string>
+    <!-- Modo demo: en producción el código se envía por email -->
+    <string name="otp_demo_code">🔐 Código (demo): %1$s</string>
+    <string name="otp_error_not_found">No se encontró el código. Solicitá uno nuevo.</string>
+    <string name="otp_error_network">Error de conexión. Intentá de nuevo.</string>
+    <!-- Login con OTP -->
+    <string name="otp_login_subtitle">Ingresá tu email para recibir un código de acceso</string>
+    <string name="otp_login_send_btn">ENVIAR CÓDIGO</string>
+    <string name="otp_login_with_otp">INGRESAR CON CÓDIGO OTP</string>
+    <string name="otp_login_with_password">Volver al inicio de sesión clásico</string>
+    <string name="otp_login_email_hint">Tu email registrado</string>
+    <string name="otp_login_success">Sesión iniciada correctamente</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris

@@ -57,10 +57,15 @@ public class LoginFragment extends Fragment {
 
         TextView tvGoToRegister = view.findViewById(R.id.btnGoToRegister);
 
+        Button btnLoginWithOtp = view.findViewById(R.id.btnLoginWithOtp);
+
         btnLogin.setOnClickListener(v -> attemptLogin(view));
         tvGoToRegister.setOnClickListener(v ->
                 Navigation.findNavController(view)
                         .navigate(R.id.action_login_to_register));
+        btnLoginWithOtp.setOnClickListener(v ->
+                Navigation.findNavController(view)
+                        .navigate(R.id.action_login_to_otp_login));
     }
 
     // ─── Paso 1: Firebase Auth ─────────────────────────────────────────────────

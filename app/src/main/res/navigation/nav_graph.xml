@@ -16,6 +16,11 @@
             android:id="@+id/action_login_to_register"
             app:destination="@id/registerFragment" />
 
+        <!-- Ir al login con OTP -->
+        <action
+            android:id="@+id/action_login_to_otp_login"
+            app:destination="@id/otpLoginFragment" />
+
         <!-- Login exitoso → home (limpia el stack de auth) -->
         <action
             android:id="@+id/action_auth_to_home"
@@ -36,6 +41,25 @@
             app:destination="@id/exploreFragment"
             app:popUpTo="@id/loginFragment"
             app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/otpLoginFragment"
+        android:name="ar.edu.uadexplorenow.ui.auth.OtpLoginFragment"
+        android:label="Login OTP"
+        tools:layout="@layout/fragment_otp_login">
+
+        <!-- OTP login exitoso → home (limpia el stack de auth) -->
+        <action
+            android:id="@+id/action_auth_to_home"
+            app:destination="@id/exploreFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+
+        <!-- Ir al registro desde OTP login -->
+        <action
+            android:id="@+id/action_otp_login_to_register"
+            app:destination="@id/registerFragment" />
     </fragment>
 
     <fragment
