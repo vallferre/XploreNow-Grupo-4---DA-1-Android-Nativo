@@ -33,3 +33,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+#EmailJS config
+app/src/main/java/ar/edu/uadexplorenow/data/email/EmailConfig.java
