@@ -3,6 +3,7 @@ import java.io.File
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.hilt)
 }
 
 // Gradle escribe mucho en app/build; OneDrive suele bloquear archivos y falla con
@@ -67,4 +68,6 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation(libs.retrofit)
     implementation(libs.retrofitConverterGson)
+    implementation(libs.hilt.android)
+    annotationProcessor(libs.hilt.compiler)
 }

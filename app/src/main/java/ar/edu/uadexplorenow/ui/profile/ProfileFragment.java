@@ -20,6 +20,8 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavOptions;
+
+import javax.inject.Inject;
 import androidx.navigation.Navigation;
 
 import com.bumptech.glide.Glide;
@@ -40,12 +42,18 @@ import java.util.Map;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
-import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class ProfileFragment extends Fragment {
+
+    @Inject
+    RealtimeDatabaseApi realtimeDatabaseApi;
 
     private static final String TAG = "ProfileFragment";
 
@@ -151,7 +159,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void fetchProfile(@NonNull FirebaseUser currentUser) {
-        RealtimeRetrofitClient.getApi().getUser(effectiveUid).enqueue(new Callback<UserRtdbDto>() {
+        realtimeDatabaseApi.getUser(effectiveUid).enqueue(new Callback<UserRtdbDto>() {
             @Override
             public void onResponse(@NonNull Call<UserRtdbDto> call, @NonNull Response<UserRtdbDto> response) {
                 if (!isAdded()) return;
@@ -293,7 +301,7 @@ public class ProfileFragment extends Fragment {
             updates.put("legacy_preferences", legacyPreferences);
         }
 
-        RealtimeRetrofitClient.getApi().patchUser(effectiveUid, updates)
+        realtimeDatabaseApi.patchUser(effectiveUid, updates)
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
@@ -336,7 +344,7 @@ public class ProfileFragment extends Fragment {
         dto.email = authEmail;
         Map<String, Object> updates = new LinkedHashMap<>();
         updates.put("email", authEmail);
-        RealtimeRetrofitClient.getApi().patchUser(effectiveUid, updates)
+        realtimeDatabaseApi.patchUser(effectiveUid, updates)
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {

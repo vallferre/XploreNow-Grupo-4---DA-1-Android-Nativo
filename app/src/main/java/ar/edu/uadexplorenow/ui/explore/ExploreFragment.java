@@ -24,6 +24,8 @@ import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavOptions;
+
+import javax.inject.Inject;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -32,7 +34,7 @@ import com.bumptech.glide.Glide;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
-import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.ui.auth.LoginFragment;
 
@@ -60,7 +62,15 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class ExploreFragment extends Fragment {
+
+    @Inject
+    RealtimeDatabaseApi realtimeDatabaseApi;
+    @Inject
+    Gson gson;
 
     private static final String TAG_ALL = "";
     private static final String PREF_AVENTURA = "aventura";
@@ -205,8 +215,7 @@ public class ExploreFragment extends Fragment {
 
     private void loadActivities() {
         progress.setVisibility(View.VISIBLE);
-        Gson gson = RealtimeRetrofitClient.gson();
-        RealtimeRetrofitClient.getApi().getActivities().enqueue(new Callback<JsonElement>() {
+        realtimeDatabaseApi.getActivities().enqueue(new Callback<JsonElement>() {
             @Override
             public void onResponse(@NonNull Call<JsonElement> call, @NonNull Response<JsonElement> response) {
                 if (!isAdded()) return;
@@ -292,7 +301,7 @@ public class ExploreFragment extends Fragment {
     }
 
     private void loadUserPreferences(@NonNull String uid) {
-        RealtimeRetrofitClient.getApi().getUser(uid).enqueue(new Callback<UserRtdbDto>() {
+        realtimeDatabaseApi.getUser(uid).enqueue(new Callback<UserRtdbDto>() {
             @Override
             public void onResponse(@NonNull Call<UserRtdbDto> call, @NonNull Response<UserRtdbDto> response) {
                 if (!isAdded()) return;

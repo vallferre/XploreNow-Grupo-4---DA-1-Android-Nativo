@@ -14,19 +14,27 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import javax.inject.Inject;
+
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
-import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class RegisterFragment extends Fragment {
+
+    @Inject
+    RealtimeDatabaseApi realtimeDatabaseApi;
 
     private EditText etName, etEmail, etPassword, etConfirmPassword;
     private Button   btnRegister;
@@ -105,7 +113,7 @@ public class RegisterFragment extends Fragment {
         dto.name        = name;
         dto.preferences = new ArrayList<>();
 
-        RealtimeRetrofitClient.getApi()
+        realtimeDatabaseApi
                 .putUser(uid, dto)
                 .enqueue(new Callback<UserRtdbDto>() {
 
@@ -141,7 +149,7 @@ public class RegisterFragment extends Fragment {
     /** Guarda email → uid en RTDB para que el login OTP pueda encontrar el perfil. */
     private void saveEmailIndex(String uid, String email) {
         String key = emailToKey(email);
-        RealtimeRetrofitClient.getApi()
+        realtimeDatabaseApi
                 .putEmailIndex(key, uid)
                 .enqueue(new Callback<String>() {
                     @Override public void onResponse(@NonNull Call<String> call,
