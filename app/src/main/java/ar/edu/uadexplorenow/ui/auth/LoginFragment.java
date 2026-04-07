@@ -15,17 +15,25 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import javax.inject.Inject;
+
 import com.google.firebase.auth.FirebaseAuth;
 
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
-import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class LoginFragment extends Fragment {
+
+    @Inject
+    RealtimeDatabaseApi realtimeDatabaseApi;
 
     private EditText    etEmail, etPassword;
     private Button      btnLogin;
@@ -103,7 +111,7 @@ public class LoginFragment extends Fragment {
     private void fetchUserAndNavigate(View view, String uid) {
         setLoading(true);
 
-        RealtimeRetrofitClient.getApi()
+        realtimeDatabaseApi
                 .getUser(uid)
                 .enqueue(new Callback<UserRtdbDto>() {
 

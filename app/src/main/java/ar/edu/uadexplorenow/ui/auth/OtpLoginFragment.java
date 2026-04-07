@@ -21,6 +21,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import javax.inject.Inject;
+
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -32,11 +34,13 @@ import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.email.OtpEmailSender;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
-import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import dagger.hilt.android.AndroidEntryPoint;
 
 /**
  * Flujo de login con OTP (sin contraseña).
@@ -54,7 +58,11 @@ import retrofit2.Response;
  * En producción: reemplazar signInAnonymously() por signInWithCustomToken()
  * donde el token es emitido por una Cloud Function tras verificar el OTP.
  */
+@AndroidEntryPoint
 public class OtpLoginFragment extends Fragment {
+
+    @Inject
+    RealtimeDatabaseApi realtimeDatabaseApi;
 
     // ─── Pasos ────────────────────────────────────────────────────────────────
     private static final int STEP_EMAIL = 0;
@@ -333,7 +341,7 @@ public class OtpLoginFragment extends Fragment {
     private void lookupUidAndNavigate(View view) {
         String emailKey = RegisterFragment.emailToKey(otpEmail);
 
-        RealtimeRetrofitClient.getApi()
+        realtimeDatabaseApi
                 .getUidByEmail(emailKey)
                 .enqueue(new Callback<String>() {
                     @Override
@@ -364,7 +372,7 @@ public class OtpLoginFragment extends Fragment {
     }
 
     private void fetchUserAndNavigate(View view, String uid) {
-        RealtimeRetrofitClient.getApi()
+        realtimeDatabaseApi
                 .getUser(uid)
                 .enqueue(new Callback<UserRtdbDto>() {
                     @Override

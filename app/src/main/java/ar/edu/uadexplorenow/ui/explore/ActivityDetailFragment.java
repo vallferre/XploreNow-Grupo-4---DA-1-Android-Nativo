@@ -15,11 +15,13 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
+
+import javax.inject.Inject;
 import androidx.viewpager2.widget.ViewPager2;
 
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
-import ar.edu.uadexplorenow.data.network.RealtimeRetrofitClient;
+import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 
 import com.google.android.material.button.MaterialButton;
@@ -30,7 +32,13 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class ActivityDetailFragment extends Fragment {
+
+    @Inject
+    RealtimeDatabaseApi realtimeDatabaseApi;
 
     /** Mismo nombre que el argumento en {@code nav_graph.xml}. */
     public static final String ARG_ACTIVITY_ID = "activity_id";
@@ -96,7 +104,7 @@ public class ActivityDetailFragment extends Fragment {
         photoPager.setAdapter(photoAdapter);
 
         final String pathId = activityId;
-        RealtimeRetrofitClient.getApi().getActivity(activityId).enqueue(new Callback<ActivityRtdbDto>() {
+        realtimeDatabaseApi.getActivity(activityId).enqueue(new Callback<ActivityRtdbDto>() {
             @Override
             public void onResponse(
                     @NonNull Call<ActivityRtdbDto> call,
