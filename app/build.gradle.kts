@@ -68,6 +68,7 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation(libs.retrofit)
     implementation(libs.retrofitConverterGson)
+    implementation(libs.okhttp)
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
 }
