@@ -20,6 +20,7 @@ import javax.inject.Inject;
 import com.google.firebase.auth.FirebaseAuth;
 
 import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.local.TokenManager;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 
@@ -34,6 +35,9 @@ public class LoginFragment extends Fragment {
 
     @Inject
     RealtimeDatabaseApi realtimeDatabaseApi;
+
+    @Inject
+    TokenManager tokenManager;
 
     private EditText    etEmail, etPassword;
     private Button      btnLogin;
@@ -94,7 +98,8 @@ public class LoginFragment extends Fragment {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener(authResult -> {
                     if (!isAdded()) return;
-                    // Auth OK → traer perfil de la RTDB
+                    // Auth OK → guardar token y traer perfil de la RTDB
+                    tokenManager.saveToken("fake-token-abc123");
                     fetchUserAndNavigate(view, authResult.getUser().getUid());
                 })
                 .addOnFailureListener(e -> {
