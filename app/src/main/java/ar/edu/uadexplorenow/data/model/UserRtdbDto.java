@@ -1,5 +1,6 @@
 package ar.edu.uadexplorenow.data.model;
 
+import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
@@ -37,6 +38,17 @@ public class UserRtdbDto {
 
     @SerializedName("completed_activities_count")
     public Long completedActivitiesCount;
+
+    @SerializedName(
+            value = "activity_history",
+            alternate = {
+                    "activityHistory",
+                    "history",
+                    "completed_activities",
+                    "completedActivities"
+            }
+    )
+    public JsonElement activityHistory;
 
     @SerializedName("created_at")
     public String createdAt;

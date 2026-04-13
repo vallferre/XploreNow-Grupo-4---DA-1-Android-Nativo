@@ -337,6 +337,18 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenHistory"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/profile_open_history"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/explore_search_bg"
+                app:cornerRadius="14dp"
+                app:strokeColor="@color/explore_chip_stroke"
+                app:strokeWidth="1dp" />
+
             <Button
                 android:id="@+id/btnSaveProfile"
                 android:layout_width="match_parent"

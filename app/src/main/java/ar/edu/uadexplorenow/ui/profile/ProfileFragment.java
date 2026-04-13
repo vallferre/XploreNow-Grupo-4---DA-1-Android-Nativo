@@ -77,6 +77,7 @@ public class ProfileFragment extends Fragment {
     private TextView tvReservedCount;
     private TextView tvCompletedCount;
     private ProgressBar progress;
+    private Button btnOpenHistory;
     private Button btnSave;
     private Button btnLogout;
 
@@ -129,10 +130,13 @@ public class ProfileFragment extends Fragment {
         tvReservedCount = view.findViewById(R.id.tvReservedCount);
         tvCompletedCount = view.findViewById(R.id.tvCompletedCount);
         progress = view.findViewById(R.id.progress);
+        btnOpenHistory = view.findViewById(R.id.btnOpenHistory);
         btnSave = view.findViewById(R.id.btnSaveProfile);
         btnLogout = view.findViewById(R.id.btnLogout);
 
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
+        btnOpenHistory.setOnClickListener(v -> Navigation.findNavController(view)
+                .navigate(R.id.action_profileFragment_to_activityHistoryFragment));
         btnSave.setOnClickListener(v -> saveProfile(currentUser));
         btnLogout.setOnClickListener(v -> logout(view));
         etPhotoUrl.setOnFocusChangeListener((v, hasFocus) -> {
@@ -277,6 +281,7 @@ public class ProfileFragment extends Fragment {
         chipPrefGastronomia.setEnabled(!loading);
         chipPrefNaturaleza.setEnabled(!loading);
         chipPrefRelax.setEnabled(!loading);
+        btnOpenHistory.setEnabled(!loading);
         btnLogout.setEnabled(!loading);
     }
 

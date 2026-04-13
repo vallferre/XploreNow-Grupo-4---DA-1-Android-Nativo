@@ -73,13 +73,33 @@
         <action
             android:id="@+id/action_exploreFragment_to_profileFragment"
             app:destination="@id/profileFragment" />
+        <action
+            android:id="@+id/action_exploreFragment_to_activityHistoryFragment"
+            app:destination="@id/activityHistoryFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/profileFragment"
         android:name="ar.edu.uadexplorenow.ui.profile.ProfileFragment"
         android:label="@string/profile_title"
-        tools:layout="@layout/fragment_profile" />
+        tools:layout="@layout/fragment_profile">
+        <action
+            android:id="@+id/action_profileFragment_to_activityHistoryFragment"
+            app:destination="@id/activityHistoryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/activityHistoryFragment"
+        android:name="ar.edu.uadexplorenow.ui.history.ActivityHistoryFragment"
+        android:label="@string/history_title"
+        tools:layout="@layout/fragment_activity_history">
+        <action
+            android:id="@+id/action_activityHistoryFragment_to_activityDetailFragment"
+            app:destination="@id/activityDetailFragment" />
+        <action
+            android:id="@+id/action_activityHistoryFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/activityDetailFragment"
