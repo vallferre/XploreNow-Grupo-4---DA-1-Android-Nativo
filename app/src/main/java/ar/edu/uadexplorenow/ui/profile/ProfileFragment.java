@@ -43,6 +43,8 @@ import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
+import ar.edu.uadexplorenow.domain.ReservationItem;
+import ar.edu.uadexplorenow.domain.ReservationStatus;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -520,6 +522,20 @@ public class ProfileFragment extends Fragment {
     }
 
     private void bindActivitySummary(@NonNull UserRtdbDto user) {
+        List<ReservationItem> reservations = ReservationItem.buildList(user, java.util.Collections.emptyMap());
+        if (!reservations.isEmpty()) {
+            int confirmed = 0;
+            int finished = 0;
+            for (ReservationItem item : reservations) {
+                String normalized = ReservationStatus.normalize(item.status);
+                if (ReservationStatus.CONFIRMED.equals(normalized)) confirmed++;
+                if (ReservationStatus.FINISHED.equals(normalized)) finished++;
+            }
+            tvReservedCount.setText(String.valueOf(confirmed));
+            tvCompletedCount.setText(String.valueOf(finished));
+            return;
+        }
+
         tvReservedCount.setText(String.valueOf(resolveSummaryCount(
                 user.reservedActivityIds,
                 user.reservedActivitiesCount)));

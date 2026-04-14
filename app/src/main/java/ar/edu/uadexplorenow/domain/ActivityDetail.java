@@ -7,8 +7,16 @@ import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -57,6 +65,39 @@ public final class ActivityDetail {
         }
     }
 
+    public static final class BookingSlot {
+        public final String slotId;
+        public final String startAtIso;
+        public final long availableSpots;
+
+        BookingSlot(@NonNull String slotId, @NonNull String startAtIso, long availableSpots) {
+            this.slotId = slotId;
+            this.startAtIso = startAtIso;
+            this.availableSpots = availableSpots;
+        }
+
+        @NonNull
+        public String formattedDate() {
+            ZonedDateTime zonedDateTime = parseFlexibleDateTime(startAtIso);
+            if (zonedDateTime == null) return startAtIso;
+            return zonedDateTime.toLocalDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("es", "AR")));
+        }
+
+        @NonNull
+        public String formattedTime() {
+            ZonedDateTime zonedDateTime = parseFlexibleDateTime(startAtIso);
+            if (zonedDateTime == null) return "";
+            return zonedDateTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+        }
+
+        @NonNull
+        public String displayLabel() {
+            String date = formattedDate();
+            String time = formattedTime();
+            return time.isEmpty() ? date : date + " · " + time;
+        }
+    }
+
     public final String id;
     public final String name;
     public final String destination;
@@ -73,10 +114,9 @@ public final class ActivityDetail {
     public final List<String> imageUrls;
     public final List<String> includes;
     public final List<String> languages;
-    /** Día de la semana en español (ej. "domingo") desde Firestore. */
     public final String day;
-    /** Fecha/hora ISO de la actividad (campo {@code date}). */
     public final String dateIso;
+    public final List<BookingSlot> bookingSlots;
     @Nullable
     public final CancellationPolicy cancellationPolicy;
 
@@ -99,6 +139,7 @@ public final class ActivityDetail {
             List<String> languages,
             String day,
             String dateIso,
+            List<BookingSlot> bookingSlots,
             @Nullable CancellationPolicy cancellationPolicy
     ) {
         this.id = id;
@@ -119,6 +160,7 @@ public final class ActivityDetail {
         this.languages = languages != null ? languages : Collections.emptyList();
         this.day = day != null ? day : "";
         this.dateIso = dateIso != null ? dateIso : "";
+        this.bookingSlots = bookingSlots != null ? bookingSlots : Collections.emptyList();
         this.cancellationPolicy = cancellationPolicy;
     }
 
@@ -157,13 +199,10 @@ public final class ActivityDetail {
                 id, name, destination, category, duration, price, currency,
                 spots, rating, reviews, guide, meeting, desc,
                 urls, parseStringList(doc.get("includes")), parseStringList(doc.get("language")),
-                day, dateIso, policy
+                day, dateIso, buildSingleSlotList(dateIso, spots), policy
         );
     }
 
-    /**
-     * Detalle desde JSON de Realtime Database (misma forma de campos que Firestore).
-     */
     @Nullable
     public static ActivityDetail fromRtdbDto(@Nullable ActivityRtdbDto raw, @NonNull String pathId) {
         if (raw == null || raw.name == null || raw.name.isEmpty()) return null;
@@ -219,39 +258,39 @@ public final class ActivityDetail {
                 stableId, raw.name, destination, category, duration, price, currency,
                 spots, rating, reviews, guide, meeting, desc,
                 urls, includes, langs,
-                day, dateIso, policy
+                day, dateIso, parseBookingSlots(raw.schedule, dateIso, spots), policy
         );
     }
 
-    private static List<String> parsePhotoUrlsFromRtdb(@Nullable List<ActivityRtdbDto.PhotoDto> photos) {
-        List<String> out = new ArrayList<>();
-        if (photos == null) return out;
-        List<MapSort> tmp = new ArrayList<>();
-        for (ActivityRtdbDto.PhotoDto p : photos) {
-            if (p == null || p.url == null || p.url.isEmpty()) continue;
-            long order = p.order != null ? p.order : 0L;
-            tmp.add(new MapSort(order, p.url));
-        }
-        Collections.sort(tmp, Comparator.comparingLong(a -> a.order));
-        for (MapSort e : tmp) out.add(e.url);
-        return out;
-    }
-
-    /**
-     * Solo día de la semana (ej. "Lunes") y hora local (ej. "07:30"), sin fecha calendario.
-     */
-    @NonNull
-    public String formattedWhenLine() {
-        if (dateIso.isEmpty() && day.isEmpty()) return "";
-
-        ZonedDateTime z = null;
-        if (!dateIso.isEmpty()) {
-            try {
-                z = Instant.parse(dateIso.trim()).atZone(ZoneId.systemDefault());
-            } catch (DateTimeParseException ignored) {
+    @Nullable
+    public BookingSlot findBookingSlot(@Nullable String slotId, @Nullable String startAtIso) {
+        for (BookingSlot slot : bookingSlots) {
+            if (!slotIdIsEmpty(slotId) && slot.slotId.equals(slotId)) {
+                return slot;
+            }
+            if (!slotIdIsEmpty(startAtIso) && slot.startAtIso.equals(startAtIso)) {
+                return slot;
             }
         }
+        return bookingSlots.isEmpty() ? null : bookingSlots.get(0);
+    }
 
+    @NonNull
+    public String formattedWhenLine() {
+        if (!bookingSlots.isEmpty()) {
+            BookingSlot slot = bookingSlots.get(0);
+            String date = slot.formattedDate();
+            String time = slot.formattedTime();
+            if (!time.isEmpty()) {
+                return date + " · " + time;
+            }
+            if (!date.equals(slot.startAtIso)) {
+                return date;
+            }
+        }
+        if (dateIso.isEmpty() && day.isEmpty()) return "";
+
+        ZonedDateTime z = parseFlexibleDateTime(dateIso);
         String dayPart = "";
         if (!day.isEmpty()) {
             dayPart = capitalizeDay(day.trim());
@@ -273,7 +312,13 @@ public final class ActivityDetail {
     @NonNull
     public String cancellationTypeLabel() {
         if (cancellationPolicy == null || cancellationPolicy.type.isEmpty()) return "";
-        String t = cancellationPolicy.type.toLowerCase(Locale.ROOT).trim();
+        return cancellationTypeLabel(cancellationPolicy.type);
+    }
+
+    @NonNull
+    public static String cancellationTypeLabel(@Nullable String rawType) {
+        if (rawType == null || rawType.trim().isEmpty()) return "";
+        String t = rawType.toLowerCase(Locale.ROOT).trim();
         switch (t) {
             case "flexible":
                 return "Flexible";
@@ -288,7 +333,218 @@ public final class ActivityDetail {
         }
     }
 
-    private static String capitalizeDay(String d) {
+    @NonNull
+    public String categoryLabel() {
+        return ActivityItem.categoryLabel(category);
+    }
+
+    @NonNull
+    public String formattedDurationLong() {
+        if (durationMinutes <= 0) return "—";
+        if (durationMinutes % 60 == 0) {
+            long h = durationMinutes / 60;
+            return h == 1 ? "1 hora" : h + " horas";
+        }
+        long h = durationMinutes / 60;
+        long m = durationMinutes % 60;
+        if (h == 0) return m + " min";
+        String hs = h == 1 ? "1 hora" : h + " horas";
+        return hs + " " + m + " min";
+    }
+
+    @NonNull
+    public String languagesDisplay() {
+        if (languages.isEmpty()) return "—";
+        List<String> up = new ArrayList<>();
+        for (String code : languages) {
+            if (code == null || code.isEmpty()) continue;
+            up.add(code.toUpperCase(Locale.ROOT));
+        }
+        if (up.isEmpty()) return "—";
+        return String.join(" / ", up);
+    }
+
+    @NonNull
+    public String priceLarge() {
+        if (price <= 0) return "Gratis";
+        if ("ARS".equalsIgnoreCase(currency)) {
+            return String.format(Locale.getDefault(), "$%.0f", price);
+        }
+        return String.format(Locale.getDefault(), "%.0f %s", price, currency);
+    }
+
+    @NonNull
+    private static List<BookingSlot> buildSingleSlotList(@NonNull String dateIso, long availableSpots) {
+        List<BookingSlot> out = new ArrayList<>();
+        if (!dateIso.isEmpty()) {
+            out.add(new BookingSlot("default", dateIso, availableSpots));
+        }
+        return out;
+    }
+
+    @NonNull
+    private static List<BookingSlot> parseBookingSlots(
+            @Nullable JsonElement raw,
+            @NonNull String fallbackDateIso,
+            long fallbackSpots
+    ) {
+        List<BookingSlot> out = new ArrayList<>();
+        parseBookingSlotElement(raw, "slot", fallbackSpots, out);
+        if (out.isEmpty()) {
+            out.addAll(buildSingleSlotList(fallbackDateIso, fallbackSpots));
+        }
+        out.sort(Comparator.comparingLong(ActivityDetail::slotSortKey));
+        return out;
+    }
+
+    private static void parseBookingSlotElement(
+            @Nullable JsonElement raw,
+            @NonNull String fallbackId,
+            long fallbackSpots,
+            @NonNull List<BookingSlot> out
+    ) {
+        if (raw == null || raw.isJsonNull()) return;
+
+        if (raw.isJsonArray()) {
+            JsonArray array = raw.getAsJsonArray();
+            for (int i = 0; i < array.size(); i++) {
+                parseBookingSlotElement(array.get(i), fallbackId + "_" + i, fallbackSpots, out);
+            }
+            return;
+        }
+
+        if (raw.isJsonObject()) {
+            JsonObject obj = raw.getAsJsonObject();
+            if (looksLikeSlot(obj)) {
+                BookingSlot slot = parseSlotObject(obj, fallbackId, fallbackSpots);
+                if (slot != null) {
+                    out.add(slot);
+                }
+                return;
+            }
+            for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+                parseBookingSlotElement(entry.getValue(), entry.getKey(), fallbackSpots, out);
+            }
+            return;
+        }
+
+        if (raw.isJsonPrimitive()) {
+            JsonPrimitive primitive = raw.getAsJsonPrimitive();
+            if (primitive.isString() || primitive.isNumber()) {
+                String value = primitive.getAsString().trim();
+                if (!value.isEmpty()) {
+                    out.add(new BookingSlot(fallbackId, value, fallbackSpots));
+                }
+            }
+        }
+    }
+
+    private static boolean looksLikeSlot(@NonNull JsonObject obj) {
+        return hasAny(obj,
+                "id", "slot_id", "slotId",
+                "date", "date_time", "dateTime",
+                "start_at", "startAt",
+                "time", "start_time", "startTime");
+    }
+
+    @Nullable
+    private static BookingSlot parseSlotObject(
+            @NonNull JsonObject obj,
+            @NonNull String fallbackId,
+            long fallbackSpots
+    ) {
+        String slotId = firstNonBlank(
+                stringOrNumber(obj, "id"),
+                stringOrNumber(obj, "slot_id"),
+                stringOrNumber(obj, "slotId"),
+                fallbackId);
+        String combinedDateTime = combineDateAndTime(
+                firstNonBlank(
+                        stringOrNumber(obj, "date"),
+                        stringOrNumber(obj, "activity_date"),
+                        stringOrNumber(obj, "activityDate")),
+                firstNonBlank(
+                        stringOrNumber(obj, "time"),
+                        stringOrNumber(obj, "hour"),
+                        stringOrNumber(obj, "start_time"),
+                        stringOrNumber(obj, "startTime")));
+        String startAtIso = firstNonBlank(
+                stringOrNumber(obj, "start_at"),
+                stringOrNumber(obj, "startAt"),
+                stringOrNumber(obj, "date_time"),
+                stringOrNumber(obj, "dateTime"),
+                combinedDateTime);
+        if (startAtIso.isEmpty()) return null;
+        long spots = longValue(obj, "available_spots");
+        if (spots <= 0) {
+            long alt = longValue(obj, "availableSpots");
+            spots = alt > 0 ? alt : fallbackSpots;
+        }
+        return new BookingSlot(slotId, startAtIso, spots);
+    }
+
+    private static long slotSortKey(@NonNull BookingSlot slot) {
+        ZonedDateTime zonedDateTime = parseFlexibleDateTime(slot.startAtIso);
+        return zonedDateTime != null ? zonedDateTime.toInstant().toEpochMilli() : Long.MAX_VALUE;
+    }
+
+    @Nullable
+    private static ZonedDateTime parseFlexibleDateTime(@Nullable String raw) {
+        String value = str(raw);
+        if (value.isEmpty()) return null;
+
+        try {
+            return Instant.parse(value).atZone(ZoneId.systemDefault());
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault());
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDateTime.parse(value).atZone(ZoneId.systemDefault());
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return LocalDate.parse(value).atStartOfDay(ZoneId.systemDefault());
+        } catch (DateTimeParseException ignored) {
+        }
+        return null;
+    }
+
+    @NonNull
+    private static String combineDateAndTime(@Nullable String rawDate, @Nullable String rawTime) {
+        String date = str(rawDate);
+        String time = str(rawTime);
+        if (date.isEmpty()) return "";
+        if (date.contains("T")) return date;
+        if (time.isEmpty()) return date;
+        try {
+            LocalDate localDate = LocalDate.parse(date);
+            LocalTime localTime = LocalTime.parse(time);
+            return LocalDateTime.of(localDate, localTime).toString();
+        } catch (DateTimeParseException ignored) {
+        }
+        return date + "T" + time;
+    }
+
+    @NonNull
+    private static List<String> parsePhotoUrlsFromRtdb(@Nullable List<ActivityRtdbDto.PhotoDto> photos) {
+        List<String> out = new ArrayList<>();
+        if (photos == null) return out;
+        List<MapSort> tmp = new ArrayList<>();
+        for (ActivityRtdbDto.PhotoDto p : photos) {
+            if (p == null || p.url == null || p.url.isEmpty()) continue;
+            long order = p.order != null ? p.order : 0L;
+            tmp.add(new MapSort(order, p.url));
+        }
+        Collections.sort(tmp, Comparator.comparingLong(a -> a.order));
+        for (MapSort e : tmp) out.add(e.url);
+        return out;
+    }
+
+    @NonNull
+    private static String capitalizeDay(@NonNull String d) {
         if (d.isEmpty()) return "";
         return d.substring(0, 1).toUpperCase(Locale.getDefault()) + d.substring(1);
     }
@@ -303,20 +559,22 @@ public final class ActivityDetail {
         return "";
     }
 
+    @NonNull
     private static String buildFallbackDescription(String name, String dest, String cat) {
         String catLabel = ActivityItem.categoryLabel(cat);
         if (!dest.isEmpty() && !catLabel.isEmpty()) {
             return name + " en " + dest + ". Una experiencia " + catLabel.toLowerCase(Locale.getDefault())
-                    + " para descubrir el destino con guía especializado.";
+                    + " para descubrir el destino con guia especializado.";
         }
         if (!dest.isEmpty()) {
-            return "Disfrutá esta actividad en " + dest + ".";
+            return "Disfruta esta actividad en " + dest + ".";
         }
-        return "Descubrí todos los detalles y reservá tu lugar.";
+        return "Descubri todos los detalles y reserva tu lugar.";
     }
 
     @SuppressWarnings("unchecked")
-    private static List<String> parsePhotoUrls(DocumentSnapshot doc) {
+    @NonNull
+    private static List<String> parsePhotoUrls(@NonNull DocumentSnapshot doc) {
         Object raw = doc.get("photos");
         if (!(raw instanceof List)) return new ArrayList<>();
         List<?> list = (List<?>) raw;
@@ -349,6 +607,7 @@ public final class ActivityDetail {
     }
 
     @SuppressWarnings("unchecked")
+    @NonNull
     private static List<String> parseStringList(@Nullable Object raw) {
         List<String> out = new ArrayList<>();
         if (!(raw instanceof List)) return out;
@@ -360,6 +619,52 @@ public final class ActivityDetail {
         return out;
     }
 
+    private static boolean hasAny(@NonNull JsonObject obj, @NonNull String... keys) {
+        for (String key : keys) {
+            if (obj.has(key)) return true;
+        }
+        return false;
+    }
+
+    @NonNull
+    private static String firstNonBlank(@Nullable String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
+    private static boolean slotIdIsEmpty(@Nullable String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    @Nullable
+    private static String stringOrNumber(@NonNull JsonObject obj, @NonNull String key) {
+        JsonElement value = obj.get(key);
+        if (value == null || value.isJsonNull() || !value.isJsonPrimitive()) return null;
+        JsonPrimitive primitive = value.getAsJsonPrimitive();
+        if (primitive.isString() || primitive.isNumber()) {
+            return primitive.getAsString().trim();
+        }
+        return null;
+    }
+
+    private static long longValue(@NonNull JsonObject obj, @NonNull String key) {
+        JsonElement value = obj.get(key);
+        if (value == null || value.isJsonNull() || !value.isJsonPrimitive()) return 0L;
+        try {
+            JsonPrimitive primitive = value.getAsJsonPrimitive();
+            if (primitive.isNumber()) return primitive.getAsLong();
+            if (primitive.isString()) return Long.parseLong(primitive.getAsString().trim());
+        } catch (NumberFormatException ignored) {
+        }
+        return 0L;
+    }
+
+    @NonNull
     private static String str(@Nullable String s) {
         return s != null ? s : "";
     }
@@ -374,47 +679,5 @@ public final class ActivityDetail {
         if (o instanceof Long) return ((Long) o).doubleValue();
         if (o instanceof Integer) return ((Integer) o).doubleValue();
         return 0;
-    }
-
-    @NonNull
-    public String categoryLabel() {
-        return ActivityItem.categoryLabel(category);
-    }
-
-    /** Texto tipo "2 horas" / "2 horas 30 min" para la grilla. */
-    @NonNull
-    public String formattedDurationLong() {
-        if (durationMinutes <= 0) return "—";
-        if (durationMinutes % 60 == 0) {
-            long h = durationMinutes / 60;
-            if (h == 1) return "1 hora";
-            return h + " horas";
-        }
-        long h = durationMinutes / 60;
-        long m = durationMinutes % 60;
-        if (h == 0) return m + " min";
-        String hs = h == 1 ? "1 hora" : h + " horas";
-        return hs + " " + m + " min";
-    }
-
-    @NonNull
-    public String languagesDisplay() {
-        if (languages.isEmpty()) return "—";
-        List<String> up = new ArrayList<>();
-        for (String code : languages) {
-            if (code == null || code.isEmpty()) continue;
-            up.add(code.toUpperCase(Locale.ROOT));
-        }
-        if (up.isEmpty()) return "—";
-        return String.join(" / ", up);
-    }
-
-    @NonNull
-    public String priceLarge() {
-        if (price <= 0) return "Gratis";
-        if ("ARS".equalsIgnoreCase(currency)) {
-            return String.format(Locale.getDefault(), "$%.0f", price);
-        }
-        return String.format(Locale.getDefault(), "%.0f %s", price, currency);
     }
 }

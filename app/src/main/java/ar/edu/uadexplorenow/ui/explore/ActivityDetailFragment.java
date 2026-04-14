@@ -4,35 +4,45 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
-
-import javax.inject.Inject;
 import androidx.viewpager2.widget.ViewPager2;
 
 import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.ReservationRepository;
+import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
-import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class ActivityDetailFragment extends Fragment {
@@ -40,10 +50,17 @@ public class ActivityDetailFragment extends Fragment {
     @Inject
     RealtimeDatabaseApi realtimeDatabaseApi;
 
-    /** Mismo nombre que el argumento en {@code nav_graph.xml}. */
     public static final String ARG_ACTIVITY_ID = "activity_id";
 
     private static final int CUPOS_LOW = 5;
+
+    private String effectiveUid = "";
+    @Nullable
+    private ActivityDetail loadedDetail;
+    @Nullable
+    private MaterialButton btnReserve;
+    @Nullable
+    private ReservationRepository reservationRepository;
 
     @Nullable
     @Override
@@ -58,6 +75,14 @@ public class ActivityDetailFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Navigation.findNavController(view).popBackStack();
+            return;
+        }
+        effectiveUid = SessionStore.getEffectiveUid(requireContext(), currentUser);
+        reservationRepository = new ReservationRepository(realtimeDatabaseApi);
 
         String id = null;
         if (getArguments() != null) {
@@ -93,17 +118,18 @@ public class ActivityDetailFragment extends Fragment {
         TextView tvCancellationType = view.findViewById(R.id.tvCancellationType);
         TextView tvCancellationDesc = view.findViewById(R.id.tvCancellationDesc);
         TextView tvBottomPrice = view.findViewById(R.id.tvBottomPrice);
-        MaterialButton btnReserve = view.findViewById(R.id.btnReserve);
+        btnReserve = view.findViewById(R.id.btnReserve);
 
         final String activityId = id;
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
-        btnReserve.setOnClickListener(v ->
-                Toast.makeText(requireContext(), R.string.detail_book_soon, Toast.LENGTH_SHORT).show());
+        btnReserve.setOnClickListener(v -> {
+            if (loadedDetail == null) return;
+            showReservationDialog(loadedDetail);
+        });
 
         DetailPhotoAdapter photoAdapter = new DetailPhotoAdapter();
         photoPager.setAdapter(photoAdapter);
 
-        final String pathId = activityId;
         realtimeDatabaseApi.getActivity(activityId).enqueue(new Callback<ActivityRtdbDto>() {
             @Override
             public void onResponse(
@@ -118,29 +144,24 @@ public class ActivityDetailFragment extends Fragment {
                     Navigation.findNavController(view).popBackStack();
                     return;
                 }
-                ActivityDetail d = ActivityDetail.fromRtdbDto(body, pathId);
-                if (d == null) {
+                ActivityDetail detail = ActivityDetail.fromRtdbDto(body, activityId);
+                if (detail == null) {
                     progress.setVisibility(View.GONE);
                     Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
                     Navigation.findNavController(view).popBackStack();
                     return;
                 }
-                try {
-                    bindDetail(
-                            d, photoPager, dotsContainer, photoAdapter,
-                            tvHeroCategory, tvTitle, tvSubtitle, tvWhenLabel, tvActivityWhen,
-                            tvDuration, tvLanguage, tvCupos, tvGuide, tvDescription,
-                            tvIncludesTitle, includesContainer,
-                            tvMeetingTitle, cardMeeting, tvMeetingPoint,
-                            tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc,
-                            tvBottomPrice);
-                    progress.setVisibility(View.GONE);
-                    contentRoot.setVisibility(View.VISIBLE);
-                } catch (RuntimeException e) {
-                    progress.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
-                    Navigation.findNavController(view).popBackStack();
-                }
+                loadedDetail = detail;
+                bindDetail(
+                        detail, photoPager, dotsContainer, photoAdapter,
+                        tvHeroCategory, tvTitle, tvSubtitle, tvWhenLabel, tvActivityWhen,
+                        tvDuration, tvLanguage, tvCupos, tvGuide, tvDescription,
+                        tvIncludesTitle, includesContainer,
+                        tvMeetingTitle, cardMeeting, tvMeetingPoint,
+                        tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc,
+                        tvBottomPrice, btnReserve);
+                progress.setVisibility(View.GONE);
+                contentRoot.setVisibility(View.VISIBLE);
             }
 
             @Override
@@ -154,75 +175,76 @@ public class ActivityDetailFragment extends Fragment {
     }
 
     private void bindDetail(
-            ActivityDetail d,
-            ViewPager2 photoPager,
-            LinearLayout dotsContainer,
-            DetailPhotoAdapter photoAdapter,
-            TextView tvHeroCategory,
-            TextView tvTitle,
-            TextView tvSubtitle,
-            TextView tvWhenLabel,
-            TextView tvActivityWhen,
-            TextView tvDuration,
-            TextView tvLanguage,
-            TextView tvCupos,
-            TextView tvGuide,
-            TextView tvDescription,
-            TextView tvIncludesTitle,
-            LinearLayout includesContainer,
-            TextView tvMeetingTitle,
-            View cardMeeting,
-            TextView tvMeetingPoint,
-            TextView tvCancellationTitle,
-            View cardCancellation,
-            TextView tvCancellationType,
-            TextView tvCancellationDesc,
-            TextView tvBottomPrice
+            @NonNull ActivityDetail detail,
+            @NonNull ViewPager2 photoPager,
+            @NonNull LinearLayout dotsContainer,
+            @NonNull DetailPhotoAdapter photoAdapter,
+            @NonNull TextView tvHeroCategory,
+            @NonNull TextView tvTitle,
+            @NonNull TextView tvSubtitle,
+            @NonNull TextView tvWhenLabel,
+            @NonNull TextView tvActivityWhen,
+            @NonNull TextView tvDuration,
+            @NonNull TextView tvLanguage,
+            @NonNull TextView tvCupos,
+            @NonNull TextView tvGuide,
+            @NonNull TextView tvDescription,
+            @NonNull TextView tvIncludesTitle,
+            @NonNull LinearLayout includesContainer,
+            @NonNull TextView tvMeetingTitle,
+            @NonNull View cardMeeting,
+            @NonNull TextView tvMeetingPoint,
+            @NonNull TextView tvCancellationTitle,
+            @NonNull View cardCancellation,
+            @NonNull TextView tvCancellationType,
+            @NonNull TextView tvCancellationDesc,
+            @NonNull TextView tvBottomPrice,
+            @NonNull MaterialButton reserveButton
     ) {
-        List<String> urls = d.imageUrls;
+        List<String> urls = detail.imageUrls;
         photoAdapter.submit(urls.isEmpty() ? null : urls);
         int photoCount = urls.isEmpty() ? 1 : urls.size();
         photoPager.setOffscreenPageLimit(Math.min(photoCount, 3));
 
         setupDots(dotsContainer, photoPager, photoCount);
 
-        tvHeroCategory.setText(d.categoryLabel());
-        tvTitle.setText(d.name);
+        tvHeroCategory.setText(detail.categoryLabel());
+        tvTitle.setText(detail.name);
         tvSubtitle.setText(getString(R.string.detail_subtitle_fmt,
-                d.destination.isEmpty() ? "—" : d.destination,
-                d.rating,
-                d.reviewCount));
+                detail.destination.isEmpty() ? "—" : detail.destination,
+                detail.rating,
+                detail.reviewCount));
 
-        String whenLine = d.formattedWhenLine();
+        String whenLine = detail.formattedWhenLine();
         if (whenLine.isEmpty()) {
             tvWhenLabel.setVisibility(View.GONE);
             tvActivityWhen.setVisibility(View.GONE);
         } else {
             tvWhenLabel.setVisibility(View.VISIBLE);
             tvActivityWhen.setVisibility(View.VISIBLE);
-            tvActivityWhen.setText("📅 " + whenLine);
+            tvActivityWhen.setText("Fecha: " + whenLine);
         }
 
-        tvDuration.setText(d.formattedDurationLong());
-        tvLanguage.setText(d.languagesDisplay());
-        tvCupos.setText(getString(R.string.detail_spots_fmt, (int) d.availableSpots));
-        if (d.availableSpots > 0 && d.availableSpots <= CUPOS_LOW) {
+        tvDuration.setText(detail.formattedDurationLong());
+        tvLanguage.setText(detail.languagesDisplay());
+        tvCupos.setText(getString(R.string.detail_spots_fmt, (int) detail.availableSpots));
+        if (detail.availableSpots > 0 && detail.availableSpots <= CUPOS_LOW) {
             tvCupos.setTextColor(ContextCompat.getColor(requireContext(), R.color.detail_cupos_low));
         } else {
             tvCupos.setTextColor(ContextCompat.getColor(requireContext(), R.color.explore_title));
         }
 
-        tvGuide.setText(d.guideName.isEmpty() ? "—" : d.guideName);
-        tvDescription.setText(d.description);
+        tvGuide.setText(detail.guideName.isEmpty() ? "—" : detail.guideName);
+        tvDescription.setText(detail.description);
 
         includesContainer.removeAllViews();
-        if (d.includes.isEmpty()) {
+        if (detail.includes.isEmpty()) {
             tvIncludesTitle.setVisibility(View.GONE);
             includesContainer.setVisibility(View.GONE);
         } else {
             tvIncludesTitle.setVisibility(View.VISIBLE);
             includesContainer.setVisibility(View.VISIBLE);
-            for (String line : d.includes) {
+            for (String line : detail.includes) {
                 TextView row = new TextView(requireContext());
                 row.setText("✓ " + line);
                 row.setTextColor(ContextCompat.getColor(requireContext(), R.color.explore_muted));
@@ -233,38 +255,237 @@ public class ActivityDetailFragment extends Fragment {
             }
         }
 
-        if (d.meetingPoint.isEmpty()) {
+        if (detail.meetingPoint.isEmpty()) {
             tvMeetingTitle.setVisibility(View.GONE);
             cardMeeting.setVisibility(View.GONE);
         } else {
             tvMeetingTitle.setVisibility(View.VISIBLE);
             cardMeeting.setVisibility(View.VISIBLE);
-            tvMeetingPoint.setText("📍 " + d.meetingPoint);
+            tvMeetingPoint.setText("Punto de encuentro: " + detail.meetingPoint);
         }
 
-        bindCancellation(d, tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc);
+        bindCancellation(detail, tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc);
+        tvBottomPrice.setText(detail.priceLarge());
+        updateReserveButton(detail, reserveButton);
+    }
 
-        tvBottomPrice.setText(d.priceLarge());
+    private void updateReserveButton(@NonNull ActivityDetail detail, @NonNull MaterialButton reserveButton) {
+        if (detail.availableSpots <= 0) {
+            reserveButton.setEnabled(false);
+            reserveButton.setText(R.string.detail_no_spots);
+            return;
+        }
+        if (detail.bookingSlots.isEmpty()) {
+            reserveButton.setEnabled(false);
+            reserveButton.setText(R.string.detail_no_schedule);
+            return;
+        }
+        reserveButton.setEnabled(true);
+        reserveButton.setText(R.string.detail_book);
+    }
+
+    private void showReservationDialog(@NonNull ActivityDetail detail) {
+        if (reservationRepository == null) return;
+        if (detail.bookingSlots.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.detail_no_schedule, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_activity_booking, null, false);
+        Spinner spinnerDate = dialogView.findViewById(R.id.spinnerBookingDate);
+        Spinner spinnerTime = dialogView.findViewById(R.id.spinnerBookingTime);
+        MaterialButton btnMinus = dialogView.findViewById(R.id.btnParticipantsMinus);
+        MaterialButton btnPlus = dialogView.findViewById(R.id.btnParticipantsPlus);
+        TextView tvParticipantsCount = dialogView.findViewById(R.id.tvParticipantsCount);
+        TextView tvAvailability = dialogView.findViewById(R.id.tvBookingAvailability);
+        TextView tvPolicy = dialogView.findViewById(R.id.tvBookingPolicy);
+
+        LinkedHashMap<String, List<ActivityDetail.BookingSlot>> slotsByDate = new LinkedHashMap<>();
+        for (ActivityDetail.BookingSlot slot : detail.bookingSlots) {
+            String dateLabel = slot.formattedDate();
+            if (!slotsByDate.containsKey(dateLabel)) {
+                slotsByDate.put(dateLabel, new ArrayList<>());
+            }
+            slotsByDate.get(dateLabel).add(slot);
+        }
+
+        List<String> dateLabels = new ArrayList<>(slotsByDate.keySet());
+        ArrayAdapter<String> dateAdapter = new ArrayAdapter<>(
+                requireContext(), android.R.layout.simple_spinner_item, dateLabels);
+        dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerDate.setAdapter(dateAdapter);
+
+        int[] participants = {1};
+        ActivityDetail.BookingSlot[] selectedSlot = {detail.bookingSlots.get(0)};
+        List<ActivityDetail.BookingSlot>[] visibleSlots = new List[]{detail.bookingSlots};
+
+        Runnable renderState = () -> {
+            ActivityDetail.BookingSlot slot = selectedSlot[0];
+            long available = slot.availableSpots > 0 ? slot.availableSpots : detail.availableSpots;
+            if (participants[0] > available && available > 0) {
+                participants[0] = (int) available;
+            }
+            if (participants[0] < 1) {
+                participants[0] = 1;
+            }
+
+            tvParticipantsCount.setText(String.valueOf(participants[0]));
+            tvAvailability.setText(getString(
+                    R.string.detail_booking_spots_fmt,
+                    Math.max(0, available),
+                    Math.max(0, available - participants[0])));
+            btnMinus.setEnabled(participants[0] > 1);
+            btnPlus.setEnabled(participants[0] < available);
+        };
+
+        Runnable syncTimeSpinner = () -> {
+            List<ActivityDetail.BookingSlot> slotsForDate = slotsByDate.get(
+                    dateLabels.get(Math.max(0, spinnerDate.getSelectedItemPosition())));
+            if (slotsForDate == null || slotsForDate.isEmpty()) {
+                slotsForDate = detail.bookingSlots;
+            }
+            visibleSlots[0] = slotsForDate;
+            List<String> timeLabels = new ArrayList<>();
+            for (ActivityDetail.BookingSlot slot : slotsForDate) {
+                String time = slot.formattedTime();
+                timeLabels.add(time.isEmpty() ? getString(R.string.detail_booking_single_time) : time);
+            }
+            ArrayAdapter<String> timeAdapter = new ArrayAdapter<>(
+                    requireContext(), android.R.layout.simple_spinner_item, timeLabels);
+            timeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerTime.setAdapter(timeAdapter);
+            spinnerTime.setSelection(0);
+            selectedSlot[0] = slotsForDate.get(0);
+            renderState.run();
+        };
+
+        spinnerDate.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                syncTimeSpinner.run();
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+
+        spinnerTime.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                List<ActivityDetail.BookingSlot> currentSlots = visibleSlots[0];
+                if (position >= 0 && position < currentSlots.size()) {
+                    selectedSlot[0] = currentSlots.get(position);
+                    renderState.run();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+
+        btnMinus.setOnClickListener(v -> {
+            if (participants[0] > 1) {
+                participants[0]--;
+                renderState.run();
+            }
+        });
+        btnPlus.setOnClickListener(v -> {
+            ActivityDetail.BookingSlot slot = selectedSlot[0];
+            long available = slot.availableSpots > 0 ? slot.availableSpots : detail.availableSpots;
+            if (participants[0] < available) {
+                participants[0]++;
+                renderState.run();
+            }
+        });
+
+        if (detail.cancellationPolicy != null && detail.cancellationPolicy.hasContent()) {
+            String type = detail.cancellationTypeLabel();
+            String summary = detail.cancellationPolicy.description;
+            if (summary.isEmpty() && detail.cancellationPolicy.freeCancelHours > 0) {
+                summary = getString(R.string.detail_cancel_hours_only, detail.cancellationPolicy.freeCancelHours);
+            }
+            if (!type.isEmpty()) {
+                tvPolicy.setText(getString(R.string.detail_booking_policy_fmt, type, summary));
+            } else {
+                tvPolicy.setText(summary);
+            }
+        } else {
+            tvPolicy.setText(R.string.detail_booking_policy_fallback);
+        }
+
+        syncTimeSpinner.run();
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setView(dialogView)
+                .setNegativeButton(R.string.detail_booking_cancel, null)
+                .setPositiveButton(R.string.detail_booking_confirm, null)
+                .create();
+        dialog.setOnShowListener(dlg -> {
+            android.widget.Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(v -> {
+                ActivityDetail.BookingSlot slot = selectedSlot[0];
+                long available = slot.availableSpots > 0 ? slot.availableSpots : detail.availableSpots;
+                if (participants[0] > available || available <= 0) {
+                    Toast.makeText(requireContext(), R.string.detail_booking_insufficient_spots, Toast.LENGTH_SHORT).show();
+                    renderState.run();
+                    return;
+                }
+
+                setDialogEnabled(dialog, false);
+                reservationRepository.createReservation(
+                        effectiveUid,
+                        detail.id,
+                        slot,
+                        participants[0],
+                        new ReservationRepository.ActionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                if (!isAdded()) return;
+                                dialog.dismiss();
+                                Toast.makeText(requireContext(), R.string.detail_booking_success, Toast.LENGTH_SHORT).show();
+                                Navigation.findNavController(requireView()).navigate(R.id.activityHistoryFragment);
+                            }
+
+                            @Override
+                            public void onError() {
+                                if (!isAdded()) return;
+                                setDialogEnabled(dialog, true);
+                                Toast.makeText(requireContext(), R.string.detail_booking_error, Toast.LENGTH_LONG).show();
+                            }
+                        });
+            });
+        });
+        dialog.show();
+    }
+
+    private void setDialogEnabled(@NonNull AlertDialog dialog, boolean enabled) {
+        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(enabled);
+        }
+        if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(enabled);
+        }
     }
 
     private void bindCancellation(
-            ActivityDetail d,
-            TextView tvCancellationTitle,
-            View cardCancellation,
-            TextView tvCancellationType,
-            TextView tvCancellationDesc
+            @NonNull ActivityDetail detail,
+            @NonNull TextView tvCancellationTitle,
+            @NonNull View cardCancellation,
+            @NonNull TextView tvCancellationType,
+            @NonNull TextView tvCancellationDesc
     ) {
-        ActivityDetail.CancellationPolicy pol = d.cancellationPolicy;
-        if (pol == null || !pol.hasContent()) {
+        ActivityDetail.CancellationPolicy policy = detail.cancellationPolicy;
+        if (policy == null || !policy.hasContent()) {
             tvCancellationTitle.setVisibility(View.GONE);
             cardCancellation.setVisibility(View.GONE);
             return;
         }
 
-        String typeLabel = d.cancellationTypeLabel();
-        String descText = pol.description;
-        if (descText.isEmpty() && pol.freeCancelHours > 0) {
-            descText = getString(R.string.detail_cancel_hours_only, pol.freeCancelHours);
+        String typeLabel = detail.cancellationTypeLabel();
+        String descText = policy.description;
+        if (descText.isEmpty() && policy.freeCancelHours > 0) {
+            descText = getString(R.string.detail_cancel_hours_only, policy.freeCancelHours);
         }
 
         boolean showType = !typeLabel.isEmpty();
@@ -287,7 +508,7 @@ public class ActivityDetailFragment extends Fragment {
         }
     }
 
-    private void setupDots(LinearLayout dotsContainer, ViewPager2 pager, int count) {
+    private void setupDots(@NonNull LinearLayout dotsContainer, @NonNull ViewPager2 pager, int count) {
         dotsContainer.removeAllViews();
         if (count <= 1) {
             dotsContainer.setVisibility(View.GONE);

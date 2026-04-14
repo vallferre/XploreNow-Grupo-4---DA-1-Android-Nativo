@@ -35,16 +35,31 @@
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_featured_tag"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:textColor="@color/explore_title"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/cardThumb"
+            tools:text="Confirmada" />
+
+        <TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:maxLines="2"
             android:textColor="@color/explore_title"
             android:textSize="15sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tvStatus"
             app:layout_constraintStart_toEndOf="@id/cardThumb"
             app:layout_constraintTop_toTopOf="@id/cardThumb"
             tools:text="Caminata gastronomica por San Telmo" />
@@ -100,7 +115,7 @@
                 tools:text="Gastro" />
 
             <TextView
-                android:id="@+id/tvDuration"
+                android:id="@+id/tvParticipants"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
@@ -109,10 +124,10 @@
                 android:paddingVertical="3dp"
                 android:textColor="#FF2E7D32"
                 android:textSize="11sp"
-                tools:text="2 horas" />
+                tools:text="2 participantes" />
 
             <TextView
-                android:id="@+id/tvRating"
+                android:id="@+id/tvTotal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_featured_tag"
@@ -120,7 +135,7 @@
                 android:paddingVertical="3dp"
                 android:textColor="@color/explore_title"
                 android:textSize="11sp"
-                tools:text="Tu calificacion: 4.5" />
+                tools:text="$35000" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

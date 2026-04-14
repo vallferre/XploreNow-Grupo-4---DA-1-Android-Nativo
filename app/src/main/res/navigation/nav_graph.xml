@@ -94,11 +94,11 @@
         android:label="@string/history_title"
         tools:layout="@layout/fragment_activity_history">
         <action
-            android:id="@+id/action_activityHistoryFragment_to_activityDetailFragment"
-            app:destination="@id/activityDetailFragment" />
-        <action
             android:id="@+id/action_activityHistoryFragment_to_profileFragment"
             app:destination="@id/profileFragment" />
+        <action
+            android:id="@+id/action_activityHistoryFragment_to_reservationDetailFragment"
+            app:destination="@id/reservationDetailFragment" />
     </fragment>
 
     <fragment
@@ -108,6 +108,17 @@
         tools:layout="@layout/activity_activity_detail">
         <argument
             android:name="activity_id"
+            app:argType="string"
+            app:nullable="false" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/reservationDetailFragment"
+        android:name="ar.edu.uadexplorenow.ui.reservations.ReservationDetailFragment"
+        android:label="@string/reservation_detail_title"
+        tools:layout="@layout/fragment_reservation_detail">
+        <argument
+            android:name="reservation_id"
             app:argType="string"
             app:nullable="false" />
     </fragment>

@@ -50,6 +50,16 @@ public class UserRtdbDto {
     )
     public JsonElement activityHistory;
 
+    @SerializedName(
+            value = "reservations",
+            alternate = {
+                    "activity_reservations",
+                    "activityReservations",
+                    "bookings"
+            }
+    )
+    public JsonElement reservations;
+
     @SerializedName("created_at")
     public String createdAt;
 }

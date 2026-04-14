@@ -32,8 +32,8 @@ import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
-import ar.edu.uadexplorenow.domain.ActivityHistoryItem;
-import ar.edu.uadexplorenow.ui.explore.ActivityDetailFragment;
+import ar.edu.uadexplorenow.domain.ReservationItem;
+import ar.edu.uadexplorenow.ui.reservations.ReservationDetailFragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -72,7 +72,7 @@ public class ActivityHistoryFragment extends Fragment {
     @Inject
     Gson gson;
 
-    private final List<ActivityHistoryItem> allItems = new ArrayList<>();
+    private final List<ReservationItem> allItems = new ArrayList<>();
     private final List<String> destinationValues = new ArrayList<>();
     private final ActivityHistoryAdapter adapter = new ActivityHistoryAdapter();
 
@@ -99,6 +99,7 @@ public class ActivityHistoryFragment extends Fragment {
     private boolean userRequestDone;
     private boolean activitiesRequestDone;
     private boolean hasShownPartialError;
+    private boolean hasLoadedOnce;
 
     @Nullable
     @Override
@@ -136,7 +137,7 @@ public class ActivityHistoryFragment extends Fragment {
 
         rvHistory.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvHistory.setAdapter(adapter);
-        adapter.setOnItemClick(this::openDetailOrWarn);
+        adapter.setOnItemClick(this::openReservationDetail);
 
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         btnDateRange.setOnClickListener(v -> openDateRangePicker());
@@ -199,10 +200,20 @@ public class ActivityHistoryFragment extends Fragment {
 
         updateDateButton();
         setupDestinationSpinner(new ArrayList<>());
-        loadHistory(currentUser);
+        loadReservations(currentUser);
     }
 
-    private void loadHistory(@NonNull FirebaseUser currentUser) {
+    @Override
+    public void onResume() {
+        super.onResume();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (hasLoadedOnce && userRequestDone && activitiesRequestDone && currentUser != null && isAdded()) {
+            loadReservations(currentUser);
+        }
+    }
+
+    private void loadReservations(@NonNull FirebaseUser currentUser) {
+        hasLoadedOnce = true;
         setLoading(true);
         hasShownPartialError = false;
         userRequestDone = false;
@@ -216,7 +227,7 @@ public class ActivityHistoryFragment extends Fragment {
                 if (!isAdded()) return;
                 loadedUser = response.isSuccessful() ? response.body() : null;
                 userRequestDone = true;
-                maybeRenderHistory();
+                maybeRenderReservations();
             }
 
             @Override
@@ -224,7 +235,7 @@ public class ActivityHistoryFragment extends Fragment {
                 if (!isAdded()) return;
                 loadedUser = null;
                 userRequestDone = true;
-                maybeRenderHistory();
+                maybeRenderReservations();
             }
         });
 
@@ -236,7 +247,7 @@ public class ActivityHistoryFragment extends Fragment {
                         ? ActivityRtdbMapper.toActivityDetails(response.body(), gson)
                         : java.util.Collections.emptyMap();
                 activitiesRequestDone = true;
-                maybeRenderHistory();
+                maybeRenderReservations();
             }
 
             @Override
@@ -244,19 +255,19 @@ public class ActivityHistoryFragment extends Fragment {
                 if (!isAdded()) return;
                 detailById = java.util.Collections.emptyMap();
                 activitiesRequestDone = true;
-                maybeRenderHistory();
+                maybeRenderReservations();
             }
         });
     }
 
-    private void maybeRenderHistory() {
+    private void maybeRenderReservations() {
         if (!userRequestDone || !activitiesRequestDone || !isAdded()) {
             return;
         }
 
         setLoading(false);
         allItems.clear();
-        allItems.addAll(ActivityHistoryItem.buildHistory(loadedUser, detailById));
+        allItems.addAll(ReservationItem.buildList(loadedUser, detailById));
         setupDestinationSpinner(allItems);
         applyFilters();
 
@@ -269,14 +280,14 @@ public class ActivityHistoryFragment extends Fragment {
         }
     }
 
-    private void setupDestinationSpinner(@NonNull List<ActivityHistoryItem> items) {
+    private void setupDestinationSpinner(@NonNull List<ReservationItem> items) {
         List<String> labels = new ArrayList<>();
         destinationValues.clear();
         labels.add(getString(R.string.history_filter_destination_all));
         destinationValues.add(DESTINATION_ALL);
 
         LinkedHashSet<String> values = new LinkedHashSet<>();
-        for (ActivityHistoryItem item : items) {
+        for (ReservationItem item : items) {
             if (!item.destination.trim().isEmpty()) {
                 values.add(item.destination.trim());
             }
@@ -284,10 +295,10 @@ public class ActivityHistoryFragment extends Fragment {
         labels.addAll(values);
         destinationValues.addAll(values);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(
                 requireContext(), android.R.layout.simple_spinner_item, labels);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerDestination.setAdapter(adapter);
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerDestination.setAdapter(spinnerAdapter);
 
         int selected = 0;
         if (!filterDestination.isEmpty()) {
@@ -306,8 +317,8 @@ public class ActivityHistoryFragment extends Fragment {
             return;
         }
 
-        List<ActivityHistoryItem> filtered = new ArrayList<>();
-        for (ActivityHistoryItem item : allItems) {
+        List<ReservationItem> filtered = new ArrayList<>();
+        for (ReservationItem item : allItems) {
             if (!filterDestination.isEmpty()
                     && !item.destination.trim().equalsIgnoreCase(filterDestination.trim())) {
                 continue;
@@ -384,15 +395,15 @@ public class ActivityHistoryFragment extends Fragment {
         picker.show(getChildFragmentManager(), "history_date_range");
     }
 
-    private void openDetailOrWarn(@NonNull ActivityHistoryItem item) {
-        if (!item.hasDetail || item.activityId.isEmpty()) {
+    private void openReservationDetail(@NonNull ReservationItem item) {
+        if (item.reservationId.isEmpty()) {
             Toast.makeText(requireContext(), R.string.history_detail_unavailable, Toast.LENGTH_SHORT).show();
             return;
         }
         Bundle args = new Bundle();
-        args.putString(ActivityDetailFragment.ARG_ACTIVITY_ID, item.activityId);
+        args.putString(ReservationDetailFragment.ARG_RESERVATION_ID, item.reservationId);
         Navigation.findNavController(requireView())
-                .navigate(R.id.action_activityHistoryFragment_to_activityDetailFragment, args);
+                .navigate(R.id.action_activityHistoryFragment_to_reservationDetailFragment, args);
     }
 
     private void navigateToExplore(@NonNull View view) {
@@ -414,7 +425,7 @@ public class ActivityHistoryFragment extends Fragment {
 
     private void setLoading(boolean loading) {
         progress.setVisibility(loading ? View.VISIBLE : View.GONE);
-        rvHistory.setVisibility(loading ? View.GONE : View.VISIBLE);
+        rvHistory.setVisibility(loading ? View.GONE : rvHistory.getVisibility());
         tvEmpty.setVisibility(loading ? View.GONE : tvEmpty.getVisibility());
         btnDateRange.setEnabled(!loading);
         btnClearFilters.setEnabled(!loading);
