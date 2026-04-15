@@ -56,8 +56,8 @@ public class ActivityHistoryAdapter extends RecyclerView.Adapter<ActivityHistory
                         item.formattedScheduleCompact(),
                         item.destinationLabel()));
         holder.tvGuide.setText(item.guideLabel());
-        holder.tvParticipants.setText(item.participantsLabel());
-        holder.tvTotal.setText(item.formattedTotalPrice());
+        holder.tvDuration.setText(item.formattedDuration());
+        holder.tvRating.setText(item.ratingLabel());
         holder.tvStatus.setText(item.statusLabel());
         bindStatus(holder, item.status);
 
@@ -117,8 +117,8 @@ public class ActivityHistoryAdapter extends RecyclerView.Adapter<ActivityHistory
         final TextView tvDateDestination;
         final TextView tvGuide;
         final TextView tvCategory;
-        final TextView tvParticipants;
-        final TextView tvTotal;
+        final TextView tvDuration;
+        final TextView tvRating;
 
         Holder(@NonNull View itemView) {
             super(itemView);
@@ -128,8 +128,8 @@ public class ActivityHistoryAdapter extends RecyclerView.Adapter<ActivityHistory
             tvDateDestination = itemView.findViewById(R.id.tvDateDestination);
             tvGuide = itemView.findViewById(R.id.tvGuide);
             tvCategory = itemView.findViewById(R.id.tvCategory);
-            tvParticipants = itemView.findViewById(R.id.tvParticipants);
-            tvTotal = itemView.findViewById(R.id.tvTotal);
+            tvDuration = itemView.findViewById(R.id.tvDuration);
+            tvRating = itemView.findViewById(R.id.tvRating);
         }
     }
 }

@@ -1,6 +1,9 @@
 package ar.edu.uadexplorenow.ui.explore;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +31,8 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.datepicker.CalendarConstraints;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -36,6 +41,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 import javax.inject.Inject;
 
@@ -47,12 +58,18 @@ import retrofit2.Response;
 @AndroidEntryPoint
 public class ActivityDetailFragment extends Fragment {
 
+    private static final String TAG = "ActivityDetailFragment";
+
     @Inject
     RealtimeDatabaseApi realtimeDatabaseApi;
 
     public static final String ARG_ACTIVITY_ID = "activity_id";
 
     private static final int CUPOS_LOW = 5;
+    private static final DateTimeFormatter BOOKING_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("es", "AR"));
+    private static final DateTimeFormatter BOOKING_TIME_FORMAT =
+            DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault());
 
     private String effectiveUid = "";
     @Nullable
@@ -275,7 +292,7 @@ public class ActivityDetailFragment extends Fragment {
             reserveButton.setText(R.string.detail_no_spots);
             return;
         }
-        if (detail.bookingSlots.isEmpty()) {
+        if (!hasBookableDates(detail)) {
             reserveButton.setEnabled(false);
             reserveButton.setText(R.string.detail_no_schedule);
             return;
@@ -286,14 +303,22 @@ public class ActivityDetailFragment extends Fragment {
 
     private void showReservationDialog(@NonNull ActivityDetail detail) {
         if (reservationRepository == null) return;
-        if (detail.bookingSlots.isEmpty()) {
+        LocalDate today = LocalDate.now();
+        LocalDate initialDate = detail.nextAvailableBookingDateFrom(today);
+        if (initialDate == null) {
+            Log.w(TAG, "No hay fechas reservables para activityId=" + detail.id + " day=" + detail.day + " dateIso=" + detail.dateIso);
             Toast.makeText(requireContext(), R.string.detail_no_schedule, Toast.LENGTH_SHORT).show();
             return;
         }
+        Log.d(TAG, "Abriendo dialogo de reserva para activityId=" + detail.id
+                + " day=" + detail.day
+                + " initialDate=" + initialDate);
 
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_activity_booking, null, false);
-        Spinner spinnerDate = dialogView.findViewById(R.id.spinnerBookingDate);
+        MaterialButton btnBookingDate = dialogView.findViewById(R.id.btnBookingDate);
+        TextView tvBookingDateHint = dialogView.findViewById(R.id.tvBookingDateHint);
+        TextView tvBookingTimeLabel = dialogView.findViewById(R.id.tvBookingTimeLabel);
         Spinner spinnerTime = dialogView.findViewById(R.id.spinnerBookingTime);
         MaterialButton btnMinus = dialogView.findViewById(R.id.btnParticipantsMinus);
         MaterialButton btnPlus = dialogView.findViewById(R.id.btnParticipantsPlus);
@@ -301,27 +326,16 @@ public class ActivityDetailFragment extends Fragment {
         TextView tvAvailability = dialogView.findViewById(R.id.tvBookingAvailability);
         TextView tvPolicy = dialogView.findViewById(R.id.tvBookingPolicy);
 
-        LinkedHashMap<String, List<ActivityDetail.BookingSlot>> slotsByDate = new LinkedHashMap<>();
-        for (ActivityDetail.BookingSlot slot : detail.bookingSlots) {
-            String dateLabel = slot.formattedDate();
-            if (!slotsByDate.containsKey(dateLabel)) {
-                slotsByDate.put(dateLabel, new ArrayList<>());
-            }
-            slotsByDate.get(dateLabel).add(slot);
-        }
-
-        List<String> dateLabels = new ArrayList<>(slotsByDate.keySet());
-        ArrayAdapter<String> dateAdapter = new ArrayAdapter<>(
-                requireContext(), android.R.layout.simple_spinner_item, dateLabels);
-        dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerDate.setAdapter(dateAdapter);
-
         int[] participants = {1};
-        ActivityDetail.BookingSlot[] selectedSlot = {detail.bookingSlots.get(0)};
-        List<ActivityDetail.BookingSlot>[] visibleSlots = new List[]{detail.bookingSlots};
+        LocalDate[] selectedDate = {initialDate};
+        List<LocalTime> availableTimes = detail.bookingTimes();
+        LocalTime[] selectedTime = {availableTimes.isEmpty() ? null : availableTimes.get(0)};
+
+        btnBookingDate.setText(formatBookingDate(selectedDate[0]));
+        tvBookingDateHint.setText(buildBookingDateHint(detail, selectedDate[0]));
 
         Runnable renderState = () -> {
-            ActivityDetail.BookingSlot slot = selectedSlot[0];
+            ActivityDetail.BookingSlot slot = detail.buildCalendarBookingSlot(selectedDate[0], selectedTime[0]);
             long available = slot.availableSpots > 0 ? slot.availableSpots : detail.availableSpots;
             if (participants[0] > available && available > 0) {
                 participants[0] = (int) available;
@@ -339,49 +353,53 @@ public class ActivityDetailFragment extends Fragment {
             btnPlus.setEnabled(participants[0] < available);
         };
 
-        Runnable syncTimeSpinner = () -> {
-            List<ActivityDetail.BookingSlot> slotsForDate = slotsByDate.get(
-                    dateLabels.get(Math.max(0, spinnerDate.getSelectedItemPosition())));
-            if (slotsForDate == null || slotsForDate.isEmpty()) {
-                slotsForDate = detail.bookingSlots;
-            }
-            visibleSlots[0] = slotsForDate;
+        if (availableTimes.isEmpty()) {
+            tvBookingTimeLabel.setText(R.string.detail_booking_time_not_required);
+            spinnerTime.setVisibility(View.GONE);
+        } else {
             List<String> timeLabels = new ArrayList<>();
-            for (ActivityDetail.BookingSlot slot : slotsForDate) {
-                String time = slot.formattedTime();
-                timeLabels.add(time.isEmpty() ? getString(R.string.detail_booking_single_time) : time);
+            for (LocalTime time : availableTimes) {
+                timeLabels.add(time.format(BOOKING_TIME_FORMAT));
             }
             ArrayAdapter<String> timeAdapter = new ArrayAdapter<>(
                     requireContext(), android.R.layout.simple_spinner_item, timeLabels);
             timeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerTime.setAdapter(timeAdapter);
             spinnerTime.setSelection(0);
-            selectedSlot[0] = slotsForDate.get(0);
-            renderState.run();
-        };
-
-        spinnerDate.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                syncTimeSpinner.run();
-            }
-
-            @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-        });
-
-        spinnerTime.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                List<ActivityDetail.BookingSlot> currentSlots = visibleSlots[0];
-                if (position >= 0 && position < currentSlots.size()) {
-                    selectedSlot[0] = currentSlots.get(position);
-                    renderState.run();
+            spinnerTime.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                    if (position >= 0 && position < availableTimes.size()) {
+                        selectedTime[0] = availableTimes.get(position);
+                        renderState.run();
+                    }
                 }
-            }
 
-            @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            });
+        }
+
+        btnBookingDate.setOnClickListener(v -> {
+            MaterialDatePicker.Builder<Long> builder = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText(R.string.detail_booking_date_picker_title)
+                    .setSelection(toUtcMillis(selectedDate[0]));
+            CalendarConstraints.Builder constraintsBuilder = new CalendarConstraints.Builder()
+                    .setValidator(buildBookingDateValidator(detail, today))
+                    .setStart(toUtcMillis(today));
+            builder.setCalendarConstraints(constraintsBuilder.build());
+
+            MaterialDatePicker<Long> picker = builder.build();
+            picker.addOnPositiveButtonClickListener(selection -> {
+                if (selection == null) {
+                    return;
+                }
+                selectedDate[0] = fromUtcMillis(selection);
+                btnBookingDate.setText(formatBookingDate(selectedDate[0]));
+                tvBookingDateHint.setText(buildBookingDateHint(detail, selectedDate[0]));
+                renderState.run();
+            });
+            picker.show(getChildFragmentManager(), "booking_date_picker");
         });
 
         btnMinus.setOnClickListener(v -> {
@@ -391,7 +409,7 @@ public class ActivityDetailFragment extends Fragment {
             }
         });
         btnPlus.setOnClickListener(v -> {
-            ActivityDetail.BookingSlot slot = selectedSlot[0];
+            ActivityDetail.BookingSlot slot = detail.buildCalendarBookingSlot(selectedDate[0], selectedTime[0]);
             long available = slot.availableSpots > 0 ? slot.availableSpots : detail.availableSpots;
             if (participants[0] < available) {
                 participants[0]++;
@@ -414,7 +432,7 @@ public class ActivityDetailFragment extends Fragment {
             tvPolicy.setText(R.string.detail_booking_policy_fallback);
         }
 
-        syncTimeSpinner.run();
+        renderState.run();
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setView(dialogView)
@@ -424,9 +442,20 @@ public class ActivityDetailFragment extends Fragment {
         dialog.setOnShowListener(dlg -> {
             android.widget.Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             positiveButton.setOnClickListener(v -> {
-                ActivityDetail.BookingSlot slot = selectedSlot[0];
+                if (selectedDate[0] == null) {
+                    Log.w(TAG, "Intento de reserva sin fecha seleccionada. activityId=" + detail.id);
+                    Toast.makeText(requireContext(), R.string.detail_booking_date_missing, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                ActivityDetail.BookingSlot slot = detail.buildCalendarBookingSlot(selectedDate[0], selectedTime[0]);
+                Log.d(TAG, "Confirmando reserva activityId=" + detail.id
+                        + " selectedDate=" + selectedDate[0]
+                        + " selectedTime=" + (selectedTime[0] != null ? selectedTime[0] : "sin_hora")
+                        + " participants=" + participants[0]
+                        + " slotIso=" + slot.startAtIso);
                 long available = slot.availableSpots > 0 ? slot.availableSpots : detail.availableSpots;
                 if (participants[0] > available || available <= 0) {
+                    Log.w(TAG, "Reserva rechazada por cupos. activityId=" + detail.id + " available=" + available + " requested=" + participants[0]);
                     Toast.makeText(requireContext(), R.string.detail_booking_insufficient_spots, Toast.LENGTH_SHORT).show();
                     renderState.run();
                     return;
@@ -442,21 +471,97 @@ public class ActivityDetailFragment extends Fragment {
                             @Override
                             public void onSuccess() {
                                 if (!isAdded()) return;
+                                Log.d(TAG, "Reserva creada con exito para activityId=" + detail.id);
                                 dialog.dismiss();
                                 Toast.makeText(requireContext(), R.string.detail_booking_success, Toast.LENGTH_SHORT).show();
                                 Navigation.findNavController(requireView()).navigate(R.id.activityHistoryFragment);
                             }
 
                             @Override
-                            public void onError() {
+                            public void onError(@NonNull String message) {
                                 if (!isAdded()) return;
+                                Log.w(TAG, "Fallo la reserva para activityId=" + detail.id + ": " + message);
                                 setDialogEnabled(dialog, true);
-                                Toast.makeText(requireContext(), R.string.detail_booking_error, Toast.LENGTH_LONG).show();
+                                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
                             }
                         });
             });
         });
         dialog.show();
+    }
+
+    private boolean hasBookableDates(@NonNull ActivityDetail detail) {
+        return detail.nextAvailableBookingDateFrom(LocalDate.now()) != null;
+    }
+
+    @NonNull
+    private String buildBookingDateHint(@NonNull ActivityDetail detail, @NonNull LocalDate initialDate) {
+        DayOfWeek bookingDay = detail.bookingDayOfWeek();
+        if (bookingDay != null) {
+            return getString(R.string.detail_booking_date_helper_day_fmt, weekdayPluralLabel(bookingDay));
+        }
+        return getString(R.string.detail_booking_date_helper_specific_fmt, formatBookingDate(initialDate));
+    }
+
+    @NonNull
+    private static String formatBookingDate(@NonNull LocalDate date) {
+        return date.format(BOOKING_DATE_FORMAT);
+    }
+
+    @NonNull
+    private CalendarConstraints.DateValidator buildBookingDateValidator(
+            @NonNull ActivityDetail detail,
+            @NonNull LocalDate today
+    ) {
+        DayOfWeek bookingDay = detail.bookingDayOfWeek();
+        if (bookingDay != null) {
+            return new WeekdayFromTodayValidator(bookingDay.getValue(), today.toEpochDay());
+        }
+
+        List<Long> allowedEpochDays = new ArrayList<>();
+        for (ActivityDetail.BookingSlot slot : detail.bookingSlots) {
+            LocalDate date = slot.localDate();
+            if (date != null && !date.isBefore(today) && !allowedEpochDays.contains(date.toEpochDay())) {
+                allowedEpochDays.add(date.toEpochDay());
+            }
+        }
+        if (allowedEpochDays.isEmpty()) {
+            LocalDate fallbackDate = detail.nextAvailableBookingDateFrom(today);
+            if (fallbackDate != null) {
+                allowedEpochDays.add(fallbackDate.toEpochDay());
+            }
+        }
+        return new SpecificDatesValidator(allowedEpochDays, today.toEpochDay());
+    }
+
+    @NonNull
+    private static String weekdayPluralLabel(@NonNull DayOfWeek dayOfWeek) {
+        switch (dayOfWeek) {
+            case MONDAY:
+                return "lunes";
+            case TUESDAY:
+                return "martes";
+            case WEDNESDAY:
+                return "miercoles";
+            case THURSDAY:
+                return "jueves";
+            case FRIDAY:
+                return "viernes";
+            case SATURDAY:
+                return "sabados";
+            case SUNDAY:
+            default:
+                return "domingos";
+        }
+    }
+
+    private static long toUtcMillis(@NonNull LocalDate date) {
+        return date.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
+    }
+
+    @NonNull
+    private static LocalDate fromUtcMillis(long millis) {
+        return java.time.Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate();
     }
 
     private void setDialogEnabled(@NonNull AlertDialog dialog, boolean enabled) {
@@ -551,5 +656,109 @@ public class ActivityDetailFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private static final class WeekdayFromTodayValidator implements CalendarConstraints.DateValidator {
+        private final int dayOfWeekValue;
+        private final long minEpochDay;
+
+        WeekdayFromTodayValidator(int dayOfWeekValue, long minEpochDay) {
+            this.dayOfWeekValue = dayOfWeekValue;
+            this.minEpochDay = minEpochDay;
+        }
+
+        private WeekdayFromTodayValidator(@NonNull Parcel source) {
+            this.dayOfWeekValue = source.readInt();
+            this.minEpochDay = source.readLong();
+        }
+
+        @Override
+        public boolean isValid(long date) {
+            LocalDate localDate = fromUtcMillis(date);
+            return localDate.toEpochDay() >= minEpochDay
+                    && localDate.getDayOfWeek().getValue() == dayOfWeekValue;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(@NonNull Parcel dest, int flags) {
+            dest.writeInt(dayOfWeekValue);
+            dest.writeLong(minEpochDay);
+        }
+
+        public static final Parcelable.Creator<WeekdayFromTodayValidator> CREATOR =
+                new Parcelable.Creator<WeekdayFromTodayValidator>() {
+                    @Override
+                    public WeekdayFromTodayValidator createFromParcel(Parcel source) {
+                        return new WeekdayFromTodayValidator(source);
+                    }
+
+                    @Override
+                    public WeekdayFromTodayValidator[] newArray(int size) {
+                        return new WeekdayFromTodayValidator[size];
+                    }
+                };
+    }
+
+    private static final class SpecificDatesValidator implements CalendarConstraints.DateValidator {
+        @NonNull
+        private final long[] allowedEpochDays;
+        private final long minEpochDay;
+
+        SpecificDatesValidator(@NonNull List<Long> allowedEpochDays, long minEpochDay) {
+            this.allowedEpochDays = new long[allowedEpochDays.size()];
+            for (int i = 0; i < allowedEpochDays.size(); i++) {
+                this.allowedEpochDays[i] = allowedEpochDays.get(i);
+            }
+            this.minEpochDay = minEpochDay;
+        }
+
+        private SpecificDatesValidator(@NonNull Parcel source) {
+            this.allowedEpochDays = source.createLongArray();
+            this.minEpochDay = source.readLong();
+        }
+
+        @Override
+        public boolean isValid(long date) {
+            LocalDate localDate = fromUtcMillis(date);
+            long epochDay = localDate.toEpochDay();
+            if (epochDay < minEpochDay) {
+                return false;
+            }
+            for (long allowedEpochDay : allowedEpochDays) {
+                if (allowedEpochDay == epochDay) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(@NonNull Parcel dest, int flags) {
+            dest.writeLongArray(allowedEpochDays);
+            dest.writeLong(minEpochDay);
+        }
+
+        public static final Parcelable.Creator<SpecificDatesValidator> CREATOR =
+                new Parcelable.Creator<SpecificDatesValidator>() {
+                    @Override
+                    public SpecificDatesValidator createFromParcel(Parcel source) {
+                        return new SpecificDatesValidator(source);
+                    }
+
+                    @Override
+                    public SpecificDatesValidator[] newArray(int size) {
+                        return new SpecificDatesValidator[size];
+                    }
+                };
     }
 }

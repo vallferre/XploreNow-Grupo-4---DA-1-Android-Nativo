@@ -115,7 +115,7 @@
                 tools:text="Gastro" />
 
             <TextView
-                android:id="@+id/tvParticipants"
+                android:id="@+id/tvDuration"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
@@ -124,10 +124,10 @@
                 android:paddingVertical="3dp"
                 android:textColor="#FF2E7D32"
                 android:textSize="11sp"
-                tools:text="2 participantes" />
+                tools:text="2 horas 30 min" />
 
             <TextView
-                android:id="@+id/tvTotal"
+                android:id="@+id/tvRating"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_featured_tag"
@@ -135,7 +135,7 @@
                 android:paddingVertical="3dp"
                 android:textColor="@color/explore_title"
                 android:textSize="11sp"
-                tools:text="$35000" />
+                tools:text="4.8/5" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

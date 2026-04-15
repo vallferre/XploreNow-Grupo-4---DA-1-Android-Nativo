@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 import java.time.Instant;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -88,6 +89,18 @@ public final class ActivityDetail {
             ZonedDateTime zonedDateTime = parseFlexibleDateTime(startAtIso);
             if (zonedDateTime == null) return "";
             return zonedDateTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+        }
+
+        @Nullable
+        public LocalDate localDate() {
+            ZonedDateTime zonedDateTime = parseFlexibleDateTime(startAtIso);
+            return zonedDateTime != null ? zonedDateTime.toLocalDate() : null;
+        }
+
+        @Nullable
+        public LocalTime localTime() {
+            ZonedDateTime zonedDateTime = parseFlexibleDateTime(startAtIso);
+            return zonedDateTime != null ? zonedDateTime.toLocalTime() : null;
         }
 
         @NonNull
@@ -207,7 +220,7 @@ public final class ActivityDetail {
     public static ActivityDetail fromRtdbDto(@Nullable ActivityRtdbDto raw, @NonNull String pathId) {
         if (raw == null || raw.name == null || raw.name.isEmpty()) return null;
 
-        String stableId = (raw.id != null && !raw.id.isEmpty()) ? raw.id : pathId;
+        String stableId = str(pathId);
         String destination = str(raw.destination);
         String category = str(raw.category);
         long duration = raw.durationMinutes != null ? raw.durationMinutes : 0L;
@@ -272,11 +285,19 @@ public final class ActivityDetail {
                 return slot;
             }
         }
-        return bookingSlots.isEmpty() ? null : bookingSlots.get(0);
+        return null;
     }
 
     @NonNull
     public String formattedWhenLine() {
+        if (!day.isEmpty()) {
+            String dayPart = capitalizeDay(day.trim());
+            LocalTime time = primaryBookingTime();
+            if (time == null) {
+                return dayPart;
+            }
+            return dayPart + " · " + time.format(DateTimeFormatter.ofPattern("HH:mm"));
+        }
         if (!bookingSlots.isEmpty()) {
             BookingSlot slot = bookingSlots.get(0);
             String date = slot.formattedDate();
@@ -371,6 +392,76 @@ public final class ActivityDetail {
             return String.format(Locale.getDefault(), "$%.0f", price);
         }
         return String.format(Locale.getDefault(), "%.0f %s", price, currency);
+    }
+
+    @Nullable
+    public DayOfWeek bookingDayOfWeek() {
+        String normalized = ActivityItem.normalizeDay(day);
+        switch (normalized) {
+            case "lunes":
+                return DayOfWeek.MONDAY;
+            case "martes":
+                return DayOfWeek.TUESDAY;
+            case "miercoles":
+                return DayOfWeek.WEDNESDAY;
+            case "jueves":
+                return DayOfWeek.THURSDAY;
+            case "viernes":
+                return DayOfWeek.FRIDAY;
+            case "sabado":
+                return DayOfWeek.SATURDAY;
+            case "domingo":
+                return DayOfWeek.SUNDAY;
+            default:
+                return null;
+        }
+    }
+
+    @Nullable
+    public LocalDate nextAvailableBookingDateFrom(@NonNull LocalDate baseDate) {
+        DayOfWeek expectedDay = bookingDayOfWeek();
+        if (expectedDay == null) {
+            if (!bookingSlots.isEmpty() && bookingSlots.get(0).localDate() != null) {
+                LocalDate date = bookingSlots.get(0).localDate();
+                return date != null && !date.isBefore(baseDate) ? date : null;
+            }
+            ZonedDateTime zonedDateTime = parseFlexibleDateTime(dateIso);
+            if (zonedDateTime != null) {
+                LocalDate date = zonedDateTime.toLocalDate();
+                return !date.isBefore(baseDate) ? date : null;
+            }
+            return null;
+        }
+        int offset = (expectedDay.getValue() - baseDate.getDayOfWeek().getValue() + 7) % 7;
+        return baseDate.plusDays(offset);
+    }
+
+    @NonNull
+    public List<LocalTime> bookingTimes() {
+        LinkedHashSet<LocalTime> uniqueTimes = new LinkedHashSet<>();
+        for (BookingSlot slot : bookingSlots) {
+            LocalTime time = slot.localTime();
+            if (time != null) {
+                uniqueTimes.add(time.withSecond(0).withNano(0));
+            }
+        }
+        LocalTime fallback = primaryBookingTime();
+        if (fallback != null) {
+            uniqueTimes.add(fallback.withSecond(0).withNano(0));
+        }
+        return new ArrayList<>(uniqueTimes);
+    }
+
+    @NonNull
+    public BookingSlot buildCalendarBookingSlot(@NonNull LocalDate selectedDate, @Nullable LocalTime selectedTime) {
+        LocalTime resolvedTime = selectedTime != null ? selectedTime : primaryBookingTime();
+        String slotId = "calendar_" + selectedDate.toString()
+                + (resolvedTime != null ? "_" + resolvedTime.toString().replace(":", "") : "");
+        if (resolvedTime != null) {
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(selectedDate, resolvedTime, ZoneId.systemDefault());
+            return new BookingSlot(slotId, zonedDateTime.toInstant().toString(), availableSpots);
+        }
+        return new BookingSlot(slotId, selectedDate.toString(), availableSpots);
     }
 
     @NonNull
@@ -486,6 +577,21 @@ public final class ActivityDetail {
     private static long slotSortKey(@NonNull BookingSlot slot) {
         ZonedDateTime zonedDateTime = parseFlexibleDateTime(slot.startAtIso);
         return zonedDateTime != null ? zonedDateTime.toInstant().toEpochMilli() : Long.MAX_VALUE;
+    }
+
+    @Nullable
+    private LocalTime primaryBookingTime() {
+        for (BookingSlot slot : bookingSlots) {
+            LocalTime time = slot.localTime();
+            if (time != null) {
+                return time.withSecond(0).withNano(0);
+            }
+        }
+        ZonedDateTime zonedDateTime = parseFlexibleDateTime(dateIso);
+        if (zonedDateTime != null) {
+            return zonedDateTime.toLocalTime().withSecond(0).withNano(0);
+        }
+        return null;
     }
 
     @Nullable

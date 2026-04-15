@@ -14,6 +14,7 @@ import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -49,6 +50,8 @@ public final class ReservationItem {
     public final String selectedTimeLabel;
     public final String imageUrl;
     public final String meetingPoint;
+    @Nullable
+    public final Double userRating;
     public final double pricePerPerson;
     public final double totalPrice;
     public final String currency;
@@ -77,6 +80,7 @@ public final class ReservationItem {
             @NonNull String selectedTimeLabel,
             @NonNull String imageUrl,
             @NonNull String meetingPoint,
+            @Nullable Double userRating,
             double pricePerPerson,
             double totalPrice,
             @NonNull String currency,
@@ -101,6 +105,7 @@ public final class ReservationItem {
         this.selectedTimeLabel = selectedTimeLabel;
         this.imageUrl = imageUrl;
         this.meetingPoint = meetingPoint;
+        this.userRating = userRating;
         this.pricePerPerson = pricePerPerson;
         this.totalPrice = totalPrice;
         this.currency = currency;
@@ -147,6 +152,7 @@ public final class ReservationItem {
                     "",
                     item.imageUrl,
                     "",
+                    null,
                     0,
                     0,
                     "",
@@ -244,6 +250,7 @@ public final class ReservationItem {
                 0L);
         int participants = (int) firstLong(
                 longValue(obj, "participants"),
+                longValue(obj, "people"),
                 longValue(obj, "people_count"),
                 longValue(obj, "peopleCount"),
                 1L);
@@ -258,17 +265,21 @@ public final class ReservationItem {
                 stringOrNumber(obj, "activity_date"),
                 stringOrNumber(obj, "activityDate"),
                 stringOrNumber(obj, "date"),
+                stringOrNumber(obj, "created_at"),
+                stringOrNumber(obj, "createdAt"),
                 detail != null ? detail.dateIso : null);
         DateInfo dateInfo = resolveDateInfo(scheduledAt);
 
-        String selectedDate = firstNonBlank(
-                stringOrNumber(obj, "selected_date"),
-                stringOrNumber(obj, "selectedDate"),
-                dateInfo.localDate != null ? dateInfo.localDate.format(DATE_SHORT) : null);
-        String selectedTime = firstNonBlank(
-                stringOrNumber(obj, "selected_time"),
-                stringOrNumber(obj, "selectedTime"),
-                dateInfo.zonedDateTime != null ? dateInfo.zonedDateTime.format(TIME_ONLY) : null);
+        String selectedDate = normalizeDateLabel(
+                firstNonBlank(
+                        stringOrNumber(obj, "selected_date"),
+                        stringOrNumber(obj, "selectedDate")),
+                dateInfo);
+        String selectedTime = normalizeTimeLabel(
+                firstNonBlank(
+                        stringOrNumber(obj, "selected_time"),
+                        stringOrNumber(obj, "selectedTime")),
+                dateInfo);
 
         String imageUrl = firstNonBlank(
                 stringOrNumber(obj, "image_url"),
@@ -278,6 +289,12 @@ public final class ReservationItem {
                 stringOrNumber(obj, "meeting_point"),
                 stringOrNumber(obj, "meetingPoint"),
                 detail != null ? detail.meetingPoint : null);
+        double ratingValue = firstDouble(
+                doubleValue(obj, "user_rating"),
+                doubleValue(obj, "userRating"),
+                doubleValue(obj, "rating"),
+                -1d);
+        Double userRating = ratingValue >= 0 ? ratingValue : null;
         double pricePerPerson = firstDouble(
                 doubleValue(obj, "price"),
                 doubleValue(obj, "price_per_person"),
@@ -324,6 +341,7 @@ public final class ReservationItem {
                 selectedTime,
                 imageUrl,
                 meetingPoint,
+                userRating,
                 pricePerPerson,
                 totalPrice,
                 currency,
@@ -411,11 +429,36 @@ public final class ReservationItem {
         return fallback;
     }
 
+    private static long firstLong(
+            @Nullable Long a,
+            @Nullable Long b,
+            @Nullable Long c,
+            @Nullable Long d,
+            long fallback
+    ) {
+        if (a != null) return a;
+        if (b != null) return b;
+        if (c != null) return c;
+        if (d != null) return d;
+        return fallback;
+    }
+
     private static double firstDouble(@Nullable Double a, @Nullable Double b, @Nullable Double c, double fallback) {
         if (a != null) return a;
         if (b != null) return b;
         if (c != null) return c;
         return fallback;
+    }
+
+    @NonNull
+    private String composeSelectedDateTimeLabel() {
+        if (selectedDateLabel.isEmpty()) {
+            return "";
+        }
+        if (selectedTimeLabel.isEmpty()) {
+            return selectedDateLabel;
+        }
+        return selectedDateLabel + " a las " + selectedTimeLabel;
     }
 
     @NonNull
@@ -452,6 +495,10 @@ public final class ReservationItem {
 
     @NonNull
     public String formattedDateLong() {
+        String preferred = composeSelectedDateTimeLabel();
+        if (!preferred.isEmpty()) {
+            return preferred;
+        }
         if (scheduledAtValue.isEmpty()) {
             return selectedDateLabel.isEmpty() ? "Sin fecha" : selectedDateLabel;
         }
@@ -464,6 +511,10 @@ public final class ReservationItem {
 
     @NonNull
     public String formattedScheduleCompact() {
+        String preferred = composeSelectedDateTimeLabel();
+        if (!preferred.isEmpty()) {
+            return preferred;
+        }
         String date = formattedDateShort();
         if (selectedTimeLabel.isEmpty()) return date;
         return date + " · " + selectedTimeLabel;
@@ -477,6 +528,12 @@ public final class ReservationItem {
     @NonNull
     public String guideLabel() {
         return guideName.isEmpty() ? "Guia no informada" : "Guia: " + guideName;
+    }
+
+    @NonNull
+    public String ratingLabel() {
+        if (userRating == null) return "Sin calificacion";
+        return String.format(LOCALE, "%.1f/5", userRating);
     }
 
     @NonNull
@@ -584,6 +641,40 @@ public final class ReservationItem {
         }
 
         return new DateInfo(0L, null, null);
+    }
+
+    @NonNull
+    private static String normalizeDateLabel(@Nullable String raw, @NonNull DateInfo fallbackInfo) {
+        String value = safe(raw);
+        if (!value.isEmpty()) {
+            DateInfo info = resolveDateInfo(value);
+            if (info.localDate != null) {
+                return info.localDate.format(DATE_SHORT);
+            }
+            return value;
+        }
+        return fallbackInfo.localDate != null ? fallbackInfo.localDate.format(DATE_SHORT) : "";
+    }
+
+    @NonNull
+    private static String normalizeTimeLabel(@Nullable String raw, @NonNull DateInfo fallbackInfo) {
+        String value = safe(raw);
+        if (!value.isEmpty()) {
+            DateInfo info = resolveDateInfo(value);
+            if (info.zonedDateTime != null) {
+                return info.zonedDateTime.format(TIME_ONLY);
+            }
+            try {
+                return LocalTime.parse(value).format(TIME_ONLY);
+            } catch (DateTimeParseException ignored) {
+            }
+            try {
+                return LocalTime.parse(value, DateTimeFormatter.ofPattern("H:mm")).format(TIME_ONLY);
+            } catch (DateTimeParseException ignored) {
+            }
+            return value;
+        }
+        return fallbackInfo.zonedDateTime != null ? fallbackInfo.zonedDateTime.format(TIME_ONLY) : "";
     }
 
     private static final class DateInfo {

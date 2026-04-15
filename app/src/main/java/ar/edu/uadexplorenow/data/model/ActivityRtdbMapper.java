@@ -55,6 +55,9 @@ public final class ActivityRtdbMapper {
                 ActivityDetail detail = ActivityDetail.fromRtdbDto(dto, String.valueOf(i));
                 if (detail != null) {
                     out.put(detail.id, detail);
+                    if (dto != null && dto.id != null && !dto.id.isEmpty()) {
+                        out.put(dto.id, detail);
+                    }
                 }
             }
         } else if (root.isJsonObject()) {
@@ -64,6 +67,9 @@ public final class ActivityRtdbMapper {
                 ActivityDetail detail = ActivityDetail.fromRtdbDto(dto, e.getKey());
                 if (detail != null) {
                     out.put(detail.id, detail);
+                    if (dto != null && dto.id != null && !dto.id.isEmpty()) {
+                        out.put(dto.id, detail);
+                    }
                 }
             }
         }

@@ -333,11 +333,11 @@ public class ReservationDetailFragment extends Fragment {
                 }
 
                 @Override
-                public void onError() {
+                public void onError(@NonNull String message) {
                     if (!isAdded()) return;
                     dialog.dismiss();
                     setActionButtonsEnabled(true);
-                    Toast.makeText(requireContext(), R.string.reservation_detail_action_error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
                 }
             });
         }));
@@ -358,10 +358,10 @@ public class ReservationDetailFragment extends Fragment {
             }
 
             @Override
-            public void onError() {
+            public void onError(@NonNull String message) {
                 if (!isAdded()) return;
                 setActionButtonsEnabled(true);
-                Toast.makeText(requireContext(), R.string.reservation_detail_action_error, Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
             }
         });
     }
