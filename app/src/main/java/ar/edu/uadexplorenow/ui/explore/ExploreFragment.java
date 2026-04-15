@@ -197,9 +197,8 @@ public class ExploreFragment extends Fragment {
                 return true;
             }
             if (itemId == R.id.nav_list) {
-                if (tvSectionAll != null) {
-                    scrollExploreTo(tvSectionAll);
-                }
+                Navigation.findNavController(view)
+                        .navigate(R.id.action_exploreFragment_to_activityHistoryFragment);
                 return true;
             }
             if (itemId == R.id.nav_profile) {

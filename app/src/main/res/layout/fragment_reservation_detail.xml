@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:id="@+id/contentRoot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="250dp">
+
+            <ImageView
+                android:id="@+id/ivHero"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                tools:src="@color/explore_search_bg" />
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="start|top"
+                android:layout_marginStart="12dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_detail_back_circle"
+                android:contentDescription="@string/detail_back"
+                android:padding="10dp"
+                android:src="@drawable/ic_arrow_back_white" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="14dp"
+                android:background="@drawable/bg_featured_tag"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textColor="@color/explore_title"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:text="Confirmada" />
+        </FrameLayout>
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="20dp"
+                android:paddingTop="18dp"
+                android:paddingBottom="110dp">
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/explore_title"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    tools:text="Caminata gastronomica por San Telmo" />
+
+                <TextView
+                    android:id="@+id/tvDestination"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/explore_muted"
+                    android:textSize="15sp"
+                    tools:text="Buenos Aires" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/detail_info_card_bg"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/reservation_detail_when"
+                                android:textColor="@color/explore_muted"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvWhen"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:textColor="@color/explore_title"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                tools:text="13 abr 2026 a las 11:00" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/detail_info_card_bg"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/reservation_detail_participants"
+                                android:textColor="@color/explore_muted"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvParticipants"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:textColor="@color/explore_title"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                tools:text="2 participantes" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/detail_info_card_bg"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/detail_label_duration"
+                                android:textColor="@color/explore_muted"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvDuration"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:textColor="@color/explore_title"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                tools:text="3 horas" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/detail_info_card_bg"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/detail_label_guide"
+                                android:textColor="@color/explore_muted"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvGuide"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:textColor="@color/explore_title"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                tools:text="Valentina R." />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="@string/reservation_detail_total"
+                    android:textColor="@color/explore_title"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTotal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/explore_price_green"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    tools:text="$35000" />
+
+                <TextView
+                    android:id="@+id/tvMeetingTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="@string/detail_section_meeting"
+                    android:textColor="@color/explore_title"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardMeeting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:cardBackgroundColor="@color/detail_meeting_bg"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <TextView
+                        android:id="@+id/tvMeetingPoint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="14dp"
+                        android:textColor="@color/explore_title"
+                        android:textSize="14sp"
+                        tools:text="Calle Defensa 123, Buenos Aires" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tvCancellationTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="@string/detail_section_cancellation"
+                    android:textColor="@color/explore_title"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardCancellation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:cardBackgroundColor="@color/detail_cancel_card_bg"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/explore_chip_stroke"
+                    app:strokeWidth="0.5dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/tvCancellationType"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/filter_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            tools:text="Tipo: Flexible" />
+
+                        <TextView
+                            android:id="@+id/tvCancellationDesc"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:textColor="@color/explore_muted"
+                            android:textSize="14sp"
+                            tools:text="Cancelacion sin cargo hasta 24 h antes." />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tvDescriptionTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="@string/detail_section_description"
+                    android:textColor="@color/explore_title"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@color/explore_muted"
+                    android:textSize="15sp"
+                    tools:text="Una experiencia gastronomica guiada por los sabores mas emblematicos de la ciudad." />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:elevation="10dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelReservation"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="@string/reservation_detail_cancel"
+                android:textColor="@color/filter_primary"
+                app:backgroundTint="@color/white"
+                app:cornerRadius="14dp"
+                app:strokeColor="@color/filter_primary"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFinishReservation"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/reservation_detail_finish"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/filter_primary"
+                app:cornerRadius="14dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+</FrameLayout>

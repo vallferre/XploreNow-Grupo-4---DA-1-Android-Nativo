@@ -27,6 +27,9 @@ public interface RealtimeDatabaseApi {
     @GET("activities/{id}.json")
     Call<ActivityRtdbDto> getActivity(@Path("id") String id);
 
+    @PATCH("activities/{id}.json")
+    Call<Void> patchActivity(@Path("id") String id, @Body Map<String, Object> updates);
+
     @GET("users/{uid}.json")
     Call<UserRtdbDto> getUser(@Path("uid") String uid);
 
@@ -35,6 +38,20 @@ public interface RealtimeDatabaseApi {
 
     @PATCH("users/{uid}.json")
     Call<Void> patchUser(@Path("uid") String uid, @Body Map<String, Object> updates);
+
+    @PUT("users/{uid}/reservations/{reservationId}.json")
+    Call<Void> putReservation(
+            @Path("uid") String uid,
+            @Path("reservationId") String reservationId,
+            @Body Map<String, Object> reservation
+    );
+
+    @PATCH("users/{uid}/reservations/{reservationId}.json")
+    Call<Void> patchReservation(
+            @Path("uid") String uid,
+            @Path("reservationId") String reservationId,
+            @Body Map<String, Object> updates
+    );
 
     // ── OTP (registro) ──────────────────────────────────────────────────────
     // Ruta: otp_codes/{uid}.json  (el uid es el del usuario ya autenticado)

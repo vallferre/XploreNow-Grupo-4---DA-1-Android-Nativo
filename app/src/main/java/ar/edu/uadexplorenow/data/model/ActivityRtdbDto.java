@@ -2,6 +2,7 @@ package ar.edu.uadexplorenow.data.model;
 
 import ar.edu.uadexplorenow.domain.ActivityItem;
 
+import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
@@ -62,6 +63,18 @@ public class ActivityRtdbDto {
 
     @SerializedName("date")
     public String date;
+
+    @SerializedName(
+            value = "schedule",
+            alternate = {
+                    "slots",
+                    "time_slots",
+                    "timeSlots",
+                    "available_dates",
+                    "availableDates"
+            }
+    )
+    public JsonElement schedule;
 
     @SerializedName("includes")
     public List<String> includes;

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tvDialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/detail_booking_title"
+        android:textColor="@color/explore_title"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/detail_booking_date_label"
+        android:textColor="@color/explore_title"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnBookingDate"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical|start"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/detail_booking_date_action"
+        android:textAllCaps="false"
+        app:backgroundTint="@color/white"
+        app:cornerRadius="14dp"
+        app:rippleColor="@color/filter_primary_light"
+        app:strokeColor="@color/explore_chip_stroke"
+        app:strokeWidth="1dp" />
+
+    <TextView
+        android:id="@+id/tvBookingDateHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/explore_muted"
+        android:textSize="13sp"
+        tools:text="Solo puedes reservar esta actividad los martes a partir de hoy." />
+
+    <TextView
+        android:id="@+id/tvBookingTimeLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/detail_booking_time_label"
+        android:textColor="@color/explore_title"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <Spinner
+        android:id="@+id/spinnerBookingTime"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_filter_spinner"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/detail_booking_people_label"
+        android:textColor="@color/explore_title"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnParticipantsMinus"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:text="-"
+            android:textSize="20sp"
+            app:cornerRadius="14dp" />
+
+        <TextView
+            android:id="@+id/tvParticipantsCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textColor="@color/explore_title"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            tools:text="2" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnParticipantsPlus"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:text="+"
+            android:textSize="20sp"
+            app:cornerRadius="14dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvBookingAvailability"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textColor="@color/filter_primary"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="Quedan 6 cupos para este horario." />
+
+    <TextView
+        android:id="@+id/tvBookingPolicy"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/explore_muted"
+        android:textSize="14sp"
+        tools:text="Politica flexible. Cancelacion sin cargo hasta 24 h antes." />
+
+</LinearLayout>

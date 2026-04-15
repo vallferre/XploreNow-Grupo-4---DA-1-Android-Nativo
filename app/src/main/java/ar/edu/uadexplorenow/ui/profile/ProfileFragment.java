@@ -43,6 +43,8 @@ import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
+import ar.edu.uadexplorenow.domain.ReservationItem;
+import ar.edu.uadexplorenow.domain.ReservationStatus;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -77,6 +79,7 @@ public class ProfileFragment extends Fragment {
     private TextView tvReservedCount;
     private TextView tvCompletedCount;
     private ProgressBar progress;
+    private Button btnOpenHistory;
     private Button btnSave;
     private Button btnLogout;
 
@@ -129,10 +132,13 @@ public class ProfileFragment extends Fragment {
         tvReservedCount = view.findViewById(R.id.tvReservedCount);
         tvCompletedCount = view.findViewById(R.id.tvCompletedCount);
         progress = view.findViewById(R.id.progress);
+        btnOpenHistory = view.findViewById(R.id.btnOpenHistory);
         btnSave = view.findViewById(R.id.btnSaveProfile);
         btnLogout = view.findViewById(R.id.btnLogout);
 
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
+        btnOpenHistory.setOnClickListener(v -> Navigation.findNavController(view)
+                .navigate(R.id.action_profileFragment_to_activityHistoryFragment));
         btnSave.setOnClickListener(v -> saveProfile(currentUser));
         btnLogout.setOnClickListener(v -> logout(view));
         etPhotoUrl.setOnFocusChangeListener((v, hasFocus) -> {
@@ -277,6 +283,7 @@ public class ProfileFragment extends Fragment {
         chipPrefGastronomia.setEnabled(!loading);
         chipPrefNaturaleza.setEnabled(!loading);
         chipPrefRelax.setEnabled(!loading);
+        btnOpenHistory.setEnabled(!loading);
         btnLogout.setEnabled(!loading);
     }
 
@@ -515,6 +522,20 @@ public class ProfileFragment extends Fragment {
     }
 
     private void bindActivitySummary(@NonNull UserRtdbDto user) {
+        List<ReservationItem> reservations = ReservationItem.buildList(user, java.util.Collections.emptyMap());
+        if (!reservations.isEmpty()) {
+            int confirmed = 0;
+            int finished = 0;
+            for (ReservationItem item : reservations) {
+                String normalized = ReservationStatus.normalize(item.status);
+                if (ReservationStatus.CONFIRMED.equals(normalized)) confirmed++;
+                if (ReservationStatus.FINISHED.equals(normalized)) finished++;
+            }
+            tvReservedCount.setText(String.valueOf(confirmed));
+            tvCompletedCount.setText(String.valueOf(finished));
+            return;
+        }
+
         tvReservedCount.setText(String.valueOf(resolveSummaryCount(
                 user.reservedActivityIds,
                 user.reservedActivitiesCount)));
