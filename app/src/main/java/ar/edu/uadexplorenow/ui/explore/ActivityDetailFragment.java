@@ -1,5 +1,6 @@
 package ar.edu.uadexplorenow.ui.explore;
 
+import android.content.res.ColorStateList;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Bundle;
@@ -19,11 +20,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.viewpager2.widget.ViewPager2;
 
 import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.FavoritesRepository;
 import ar.edu.uadexplorenow.data.ReservationRepository;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
@@ -62,6 +65,8 @@ public class ActivityDetailFragment extends Fragment {
 
     @Inject
     RealtimeDatabaseApi realtimeDatabaseApi;
+    @Inject
+    FavoritesRepository favoritesRepository;
 
     public static final String ARG_ACTIVITY_ID = "activity_id";
 
@@ -72,6 +77,9 @@ public class ActivityDetailFragment extends Fragment {
             DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault());
 
     private String effectiveUid = "";
+    private boolean isFavorite;
+    @Nullable
+    private ImageButton btnFavorite;
     @Nullable
     private ActivityDetail loadedDetail;
     @Nullable
@@ -115,6 +123,7 @@ public class ActivityDetailFragment extends Fragment {
         ViewPager2 photoPager = view.findViewById(R.id.photoPager);
         LinearLayout dotsContainer = view.findViewById(R.id.dotsContainer);
         ImageButton btnBack = view.findViewById(R.id.btnBack);
+        btnFavorite = view.findViewById(R.id.btnFavorite);
         TextView tvHeroCategory = view.findViewById(R.id.tvHeroCategory);
         TextView tvTitle = view.findViewById(R.id.tvTitle);
         TextView tvSubtitle = view.findViewById(R.id.tvSubtitle);
@@ -139,6 +148,9 @@ public class ActivityDetailFragment extends Fragment {
 
         final String activityId = id;
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
+        if (btnFavorite != null) {
+            btnFavorite.setOnClickListener(v -> onFavoriteButtonClicked(activityId));
+        }
         btnReserve.setOnClickListener(v -> {
             if (loadedDetail == null) return;
             showReservationDialog(loadedDetail);
@@ -177,6 +189,7 @@ public class ActivityDetailFragment extends Fragment {
                         tvMeetingTitle, cardMeeting, tvMeetingPoint,
                         tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc,
                         tvBottomPrice, btnReserve);
+                setupFavoriteAfterLoad(activityId, detail);
                 progress.setVisibility(View.GONE);
                 contentRoot.setVisibility(View.VISIBLE);
             }
@@ -189,6 +202,59 @@ public class ActivityDetailFragment extends Fragment {
                 Navigation.findNavController(view).popBackStack();
             }
         });
+    }
+
+    private void setupFavoriteAfterLoad(@NonNull String activityId, @NonNull ActivityDetail detail) {
+        favoritesRepository.loadOne(effectiveUid, activityId, dto -> {
+            if (!isAdded()) return;
+            isFavorite = dto != null;
+            reflectFavoriteIcon();
+            if (isFavorite) {
+                favoritesRepository.syncBaseline(
+                        effectiveUid,
+                        activityId,
+                        detail.price,
+                        detail.availableSpots,
+                        err -> { });
+            }
+        });
+    }
+
+    private void reflectFavoriteIcon() {
+        if (btnFavorite == null || !isAdded()) return;
+        if (isFavorite) {
+            btnFavorite.setImageResource(R.drawable.ic_favorite_filled_24);
+            ImageViewCompat.setImageTintList(btnFavorite, null);
+        } else {
+            btnFavorite.setImageResource(R.drawable.ic_favorite_border_24);
+            ImageViewCompat.setImageTintList(btnFavorite, ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), android.R.color.white)));
+        }
+    }
+
+    private void onFavoriteButtonClicked(@NonNull String activityId) {
+        if (loadedDetail == null) return;
+        if (isFavorite) {
+            favoritesRepository.removeFavorite(effectiveUid, activityId, err -> {
+                if (!isAdded()) return;
+                if (err == null) {
+                    isFavorite = false;
+                    reflectFavoriteIcon();
+                } else {
+                    Toast.makeText(requireContext(), R.string.favorites_load_error, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            favoritesRepository.addFavorite(effectiveUid, loadedDetail, err -> {
+                if (!isAdded()) return;
+                if (err == null) {
+                    isFavorite = true;
+                    reflectFavoriteIcon();
+                } else {
+                    Toast.makeText(requireContext(), R.string.favorites_load_error, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private void bindDetail(

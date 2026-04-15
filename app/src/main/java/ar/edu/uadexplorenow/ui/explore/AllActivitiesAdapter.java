@@ -1,12 +1,17 @@
 package ar.edu.uadexplorenow.ui.explore;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import ar.edu.uadexplorenow.R;
@@ -15,7 +20,10 @@ import ar.edu.uadexplorenow.domain.ActivityItem;
 import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class AllActivitiesAdapter extends RecyclerView.Adapter<AllActivitiesAdapter.Holder> {
@@ -98,9 +106,21 @@ public class AllActivitiesAdapter extends RecyclerView.Adapter<AllActivitiesAdap
 
     private final List<ActivityItem> items = new ArrayList<>();
     private Consumer<String> onItemClick;
+    private Consumer<ActivityItem> onFavoriteClick;
+    @NonNull
+    private Set<String> favoriteIds = Collections.emptySet();
 
     public void setOnItemClick(Consumer<String> listener) {
         onItemClick = listener;
+    }
+
+    public void setOnFavoriteClick(@Nullable Consumer<ActivityItem> listener) {
+        onFavoriteClick = listener;
+    }
+
+    public void setFavoriteIdSet(@Nullable Set<String> ids) {
+        favoriteIds = ids != null ? new HashSet<>(ids) : Collections.emptySet();
+        notifyDataSetChanged();
     }
 
     public void submit(List<ActivityItem> data) {
@@ -122,12 +142,30 @@ public class AllActivitiesAdapter extends RecyclerView.Adapter<AllActivitiesAdap
         ActivityItem a = items.get(position);
         populateRowViews(h.itemView, a);
 
+        boolean fav = favoriteIds.contains(a.id);
+        bindFavoriteIcon(h.btnFavorite, fav, ContextCompat.getColor(h.itemView.getContext(), R.color.explore_title));
+        h.btnFavorite.setOnClickListener(v -> {
+            if (onFavoriteClick != null) {
+                onFavoriteClick.accept(a);
+            }
+        });
+
         h.itemView.setOnClickListener(v -> {
             int pos = h.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION && onItemClick != null) {
                 onItemClick.accept(items.get(pos).id);
             }
         });
+    }
+
+    static void bindFavoriteIcon(@NonNull ImageButton btn, boolean favorite, int borderTintColor) {
+        if (favorite) {
+            btn.setImageResource(R.drawable.ic_favorite_filled_24);
+            ImageViewCompat.setImageTintList(btn, null);
+        } else {
+            btn.setImageResource(R.drawable.ic_favorite_border_24);
+            ImageViewCompat.setImageTintList(btn, ColorStateList.valueOf(borderTintColor));
+        }
     }
 
     @Override
@@ -137,6 +175,7 @@ public class AllActivitiesAdapter extends RecyclerView.Adapter<AllActivitiesAdap
 
     static final class Holder extends RecyclerView.ViewHolder {
         final ImageView ivThumb;
+        final ImageButton btnFavorite;
         final TextView tvTitle;
         final TextView tvLocation;
         final TextView tvTagCategory;
@@ -148,6 +187,7 @@ public class AllActivitiesAdapter extends RecyclerView.Adapter<AllActivitiesAdap
         Holder(@NonNull View itemView) {
             super(itemView);
             ivThumb = itemView.findViewById(R.id.ivThumb);
+            btnFavorite = itemView.findViewById(R.id.btnFavorite);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvLocation = itemView.findViewById(R.id.tvLocation);
             tvTagCategory = itemView.findViewById(R.id.tvTagCategory);

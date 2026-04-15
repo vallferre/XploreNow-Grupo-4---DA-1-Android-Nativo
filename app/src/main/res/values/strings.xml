@@ -28,10 +28,21 @@
     <string name="explore_empty">No hay actividades con esos filtros</string>
     <string name="explore_rating">★ %1$.1f</string>
     <string name="explore_nav_home">Inicio</string>
-    <string name="explore_nav_search">Buscar</string>
+    <string name="explore_nav_favorites">Favoritos</string>
     <string name="explore_nav_list">Mis actividades</string>
     <string name="explore_nav_profile">Perfil</string>
     <string name="explore_open_filters">Abrir filtros</string>
+    <string name="favorite_toggle_cd">Marcar o quitar favorito</string>
+    <string name="favorites_title">Mis favoritos</string>
+    <string name="favorites_subtitle">Actividades guardadas. Reservá con un toque.</string>
+    <string name="favorites_empty">Todavía no tenés favoritos. Marcá el corazón en el catálogo o en el detalle.</string>
+    <string name="favorites_load_error">No se pudieron cargar los favoritos</string>
+    <string name="favorites_spots_increased_fmt">Subieron %1$d cupos</string>
+    <string name="favorites_spots_exhausted">Ya no hay cupos</string>
+    <string name="favorites_price_reduced_fmt">El precio se redujo %1$s</string>
+    <string name="favorites_price_increased_fmt">El precio subió %1$s</string>
+    <string name="favorites_reserve">Reservar</string>
+    <string name="favorites_back">Volver</string>
 
     <string name="filter_sheet_title">Filtrar actividades</string>
     <string name="filter_label_destination">Destino</string>

@@ -39,6 +39,18 @@
                 android:textSize="11sp"
                 tools:text="Free tour" />
 
+            <ImageButton
+                android:id="@+id/btnFavorite"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_detail_back_circle"
+                android:contentDescription="@string/favorite_toggle_cd"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                tools:src="@drawable/ic_favorite_border_24" />
+
         </FrameLayout>
 
         <LinearLayout
