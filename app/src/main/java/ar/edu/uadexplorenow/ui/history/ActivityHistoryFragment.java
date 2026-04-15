@@ -6,7 +6,6 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -182,8 +181,9 @@ public class ActivityHistoryFragment extends Fragment {
                 navigateToExplore(view);
                 return true;
             }
-            if (itemId == R.id.nav_search) {
-                focusSearch();
+            if (itemId == R.id.nav_favorites) {
+                Navigation.findNavController(view)
+                        .navigate(R.id.action_activityHistoryFragment_to_favoritesFragment);
                 return true;
             }
             if (itemId == R.id.nav_list) {
@@ -411,15 +411,6 @@ public class ActivityHistoryFragment extends Fragment {
         boolean popped = navController.popBackStack(R.id.exploreFragment, false);
         if (!popped) {
             navController.navigate(R.id.exploreFragment);
-        }
-    }
-
-    private void focusSearch() {
-        etSearch.requestFocus();
-        InputMethodManager imm = (InputMethodManager) requireContext()
-                .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT);
         }
     }
 

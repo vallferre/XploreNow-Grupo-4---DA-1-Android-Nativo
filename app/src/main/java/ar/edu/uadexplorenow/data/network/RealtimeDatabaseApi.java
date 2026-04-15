@@ -1,6 +1,7 @@
 package ar.edu.uadexplorenow.data.network;
 
 import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
+import ar.edu.uadexplorenow.data.model.FavoriteRtdbDto;
 import ar.edu.uadexplorenow.data.model.OtpRecord;
 
 import com.google.gson.JsonElement;
@@ -38,6 +39,33 @@ public interface RealtimeDatabaseApi {
 
     @PATCH("users/{uid}.json")
     Call<Void> patchUser(@Path("uid") String uid, @Body Map<String, Object> updates);
+
+    // ── Favoritos (persistencia en RTDB) ─────────────────────────────────────
+    @GET("users/{uid}/favorites.json")
+    Call<JsonElement> getFavorites(@Path("uid") String uid);
+
+    @GET("users/{uid}/favorites/{activityId}.json")
+    Call<FavoriteRtdbDto> getFavorite(
+            @Path("uid") String uid,
+            @Path("activityId") String activityId
+    );
+
+    @PUT("users/{uid}/favorites/{activityId}.json")
+    Call<Void> putFavorite(
+            @Path("uid") String uid,
+            @Path("activityId") String activityId,
+            @Body FavoriteRtdbDto body
+    );
+
+    @PATCH("users/{uid}/favorites/{activityId}.json")
+    Call<Void> patchFavorite(
+            @Path("uid") String uid,
+            @Path("activityId") String activityId,
+            @Body Map<String, Object> updates
+    );
+
+    @DELETE("users/{uid}/favorites/{activityId}.json")
+    Call<Void> deleteFavorite(@Path("uid") String uid, @Path("activityId") String activityId);
 
     @PUT("users/{uid}/reservations/{reservationId}.json")
     Call<Void> putReservation(

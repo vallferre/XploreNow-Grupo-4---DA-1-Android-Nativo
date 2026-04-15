@@ -32,7 +32,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import ar.edu.uadexplorenow.R;
+import ar.edu.uadexplorenow.data.FavoritesRepository;
+import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
+import ar.edu.uadexplorenow.data.model.FavoriteRtdbDto;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityItem;
@@ -51,9 +54,12 @@ import com.google.gson.JsonElement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -71,6 +77,8 @@ public class ExploreFragment extends Fragment {
     RealtimeDatabaseApi realtimeDatabaseApi;
     @Inject
     Gson gson;
+    @Inject
+    FavoritesRepository favoritesRepository;
 
     private static final String TAG_ALL = "";
     private static final String PREF_AVENTURA = "aventura";
@@ -85,6 +93,8 @@ public class ExploreFragment extends Fragment {
 
     private final List<ActivityItem> allActivities = new ArrayList<>();
     private final LinkedHashSet<String> userPreferenceKeys = new LinkedHashSet<>();
+    private final Map<String, FavoriteRtdbDto> favoriteByActivityId = new LinkedHashMap<>();
+    private String effectiveUid = "";
 
     private EditText etSearch;
     private RecyclerView rvFeatured;
@@ -161,6 +171,9 @@ public class ExploreFragment extends Fragment {
         };
         featuredAdapter.setOnItemClick(openDetail);
         allAdapter.setOnItemClick(openDetail);
+        Consumer<ActivityItem> onFavorite = this::onFavoriteToggle;
+        featuredAdapter.setOnFavoriteClick(onFavorite);
+        allAdapter.setOnFavoriteClick(onFavorite);
 
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -189,11 +202,9 @@ public class ExploreFragment extends Fragment {
                 }
                 return true;
             }
-            if (itemId == R.id.nav_search) {
-                etSearch.requestFocus();
-                InputMethodManager imm = (InputMethodManager) requireContext()
-                        .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
-                if (imm != null) imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT);
+            if (itemId == R.id.nav_favorites) {
+                Navigation.findNavController(view)
+                        .navigate(R.id.action_exploreFragment_to_favoritesFragment);
                 return true;
             }
             if (itemId == R.id.nav_list) {
@@ -208,8 +219,52 @@ public class ExploreFragment extends Fragment {
             return false;
         });
 
+        effectiveUid = SessionStore.getEffectiveUid(
+                requireContext(), FirebaseAuth.getInstance().getCurrentUser());
         loadUserPreferences(FirebaseAuth.getInstance().getCurrentUser().getUid());
         loadActivities();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null && !effectiveUid.isEmpty()) {
+            loadFavoritesFromServer();
+        }
+    }
+
+    private void loadFavoritesFromServer() {
+        favoritesRepository.loadAll(effectiveUid, map -> {
+            if (!isAdded()) return;
+            favoriteByActivityId.clear();
+            favoriteByActivityId.putAll(map);
+            applyFilters();
+        });
+    }
+
+    private void onFavoriteToggle(@NonNull ActivityItem activity) {
+        if (favoriteByActivityId.containsKey(activity.id)) {
+            favoritesRepository.removeFavorite(effectiveUid, activity.id, err -> {
+                if (!isAdded()) return;
+                if (err == null) {
+                    favoriteByActivityId.remove(activity.id);
+                    applyFilters();
+                } else {
+                    Toast.makeText(requireContext(), R.string.favorites_load_error, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            favoritesRepository.addFavorite(effectiveUid, activity, err -> {
+                if (!isAdded()) return;
+                if (err == null) {
+                    favoriteByActivityId.put(
+                            activity.id, new FavoriteRtdbDto(activity.price, activity.availableSpots));
+                    applyFilters();
+                } else {
+                    Toast.makeText(requireContext(), R.string.favorites_load_error, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private void loadActivities() {
@@ -256,6 +311,10 @@ public class ExploreFragment extends Fragment {
     }
 
     private void applyFilters() {
+        Set<String> favIds = new HashSet<>(favoriteByActivityId.keySet());
+        featuredAdapter.setFavoriteIdSet(favIds);
+        allAdapter.setFavoriteIdSet(favIds);
+
         List<ActivityItem> filtered = new ArrayList<>();
         for (ActivityItem a : allActivities) {
             if (!filterDestination.isEmpty()

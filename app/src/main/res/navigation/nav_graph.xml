@@ -76,6 +76,25 @@
         <action
             android:id="@+id/action_exploreFragment_to_activityHistoryFragment"
             app:destination="@id/activityHistoryFragment" />
+        <action
+            android:id="@+id/action_exploreFragment_to_favoritesFragment"
+            app:destination="@id/favoritesFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="ar.edu.uadexplorenow.ui.explore.FavoritesFragment"
+        android:label="@string/favorites_title"
+        tools:layout="@layout/fragment_favorites">
+        <action
+            android:id="@+id/action_favoritesFragment_to_activityDetailFragment"
+            app:destination="@id/activityDetailFragment" />
+        <action
+            android:id="@+id/action_favoritesFragment_to_activityHistoryFragment"
+            app:destination="@id/activityHistoryFragment" />
+        <action
+            android:id="@+id/action_favoritesFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
     </fragment>
 
     <fragment
@@ -99,6 +118,9 @@
         <action
             android:id="@+id/action_activityHistoryFragment_to_reservationDetailFragment"
             app:destination="@id/reservationDetailFragment" />
+        <action
+            android:id="@+id/action_activityHistoryFragment_to_favoritesFragment"
+            app:destination="@id/favoritesFragment" />
     </fragment>
 
     <fragment
