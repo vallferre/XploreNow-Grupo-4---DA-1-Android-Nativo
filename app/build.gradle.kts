@@ -71,4 +71,5 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
+    implementation("androidx.hilt:hilt-navigation-fragment:1.2.0")
 }
