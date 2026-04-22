@@ -2,6 +2,7 @@ package ar.edu.uadexplorenow.ui.explore;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -51,6 +52,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -221,7 +223,7 @@ public class ExploreFragment extends Fragment {
 
         effectiveUid = SessionStore.getEffectiveUid(
                 requireContext(), FirebaseAuth.getInstance().getCurrentUser());
-        loadUserPreferences(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        loadUserPreferences(effectiveUid);
         loadActivities();
     }
 
@@ -393,8 +395,8 @@ public class ExploreFragment extends Fragment {
     private void updateProfileButtonPhoto(@Nullable String photoUrl) {
         if (!isAdded() || btnProfile == null) return;
 
-        String safePhotoUrl = photoUrl != null ? photoUrl.trim() : "";
-        if (safePhotoUrl.isEmpty()) {
+        Object photoModel = resolvePhotoModel(photoUrl);
+        if (photoModel == null) {
             Glide.with(this).clear(btnProfile);
             btnProfile.setScaleType(ImageButton.ScaleType.CENTER_INSIDE);
             btnProfile.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
@@ -408,11 +410,38 @@ public class ExploreFragment extends Fragment {
         btnProfile.setScaleType(ImageButton.ScaleType.CENTER_CROP);
         btnProfile.setImageTintList(null);
         Glide.with(this)
-                .load(safePhotoUrl)
+                .load(photoModel)
                 .circleCrop()
                 .placeholder(R.drawable.ic_nav_person)
                 .error(R.drawable.ic_nav_person)
                 .into(btnProfile);
+    }
+
+    @Nullable
+    private Object resolvePhotoModel(@Nullable String photoUrl) {
+        String safePhotoUrl = photoUrl != null ? photoUrl.trim() : "";
+        if (safePhotoUrl.isEmpty()) {
+            return null;
+        }
+
+        Uri uri = Uri.parse(safePhotoUrl);
+        String scheme = uri.getScheme();
+        if (scheme == null || scheme.trim().isEmpty()) {
+            File localFile = new File(safePhotoUrl);
+            return localFile.exists() ? localFile : null;
+        }
+        if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
+            return safePhotoUrl;
+        }
+        if ("file".equalsIgnoreCase(scheme)) {
+            String path = uri.getPath();
+            if (path == null || path.trim().isEmpty()) {
+                return null;
+            }
+            File localFile = new File(path);
+            return localFile.exists() ? uri : null;
+        }
+        return uri;
     }
 
     private int dpToPx(int dp) {

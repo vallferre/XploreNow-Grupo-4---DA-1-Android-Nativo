@@ -1,36 +1,53 @@
 package ar.edu.uadexplorenow.ui.profile;
 
+import android.Manifest;
+import android.content.ContentResolver;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.net.Uri;
 import android.util.Log;
-import android.widget.ImageView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.navigation.NavOptions;
-
-import javax.inject.Inject;
 import androidx.navigation.Navigation;
 
+import javax.inject.Inject;
+
 import com.bumptech.glide.Glide;
+import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.android.material.chip.Chip;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -64,12 +81,15 @@ public class ProfileFragment extends Fragment {
     private static final String PREF_GASTRONOMIA = "gastronomia";
     private static final String PREF_NATURALEZA = "naturaleza";
     private static final String PREF_RELAX = "relax";
+    private static final String PROFILE_IMAGE_DIR = "profile_images";
+    private static final String PROFILE_IMAGE_FILE_PREFIX = "profile_photo_";
+    private static final String PROFILE_IMAGE_CAPTURE_SUFFIX = "_capture";
 
     private EditText etName;
-    private EditText etPhotoUrl;
     private EditText etEmail;
     private EditText etPhone;
     private ImageView ivProfilePhoto;
+    private Button btnSelectProfileImage;
     private Chip chipPrefAventura;
     private Chip chipPrefCultura;
     private Chip chipPrefGastronomia;
@@ -86,6 +106,33 @@ public class ProfileFragment extends Fragment {
     private UserRtdbDto loadedUser;
     private boolean canSaveProfile;
     private final List<String> preservedLegacyPreferences = new ArrayList<>();
+    private String currentPhotoUrl = "";
+    @Nullable
+    private Uri pendingCameraPhotoUri;
+    @Nullable
+    private File pendingCameraPhotoFile;
+    private final ActivityResultLauncher<String> requestGalleryPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (!isAdded()) return;
+                if (isGranted) {
+                    openGallery();
+                    return;
+                }
+                Toast.makeText(requireContext(), R.string.profile_photo_permission_denied, Toast.LENGTH_LONG).show();
+            });
+    private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (!isAdded()) return;
+                if (isGranted) {
+                    openCamera();
+                    return;
+                }
+                Toast.makeText(requireContext(), R.string.profile_photo_camera_permission_denied, Toast.LENGTH_LONG).show();
+            });
+    private final ActivityResultLauncher<String> pickProfileImageLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), this::handleSelectedProfileImage);
+    private final ActivityResultLauncher<Uri> takeProfilePhotoLauncher =
+            registerForActivityResult(new ActivityResultContracts.TakePicture(), this::handleCapturedProfilePhoto);
 
     // UID y email efectivos: para login OTP difieren del user anónimo de Firebase Auth.
     private String effectiveUid;
@@ -120,7 +167,7 @@ public class ProfileFragment extends Fragment {
         ImageButton btnBack = view.findViewById(R.id.btnBack);
         etName = view.findViewById(R.id.etName);
         ivProfilePhoto = view.findViewById(R.id.ivProfilePhoto);
-        etPhotoUrl = view.findViewById(R.id.etPhotoUrl);
+        btnSelectProfileImage = view.findViewById(R.id.btnSelectProfileImage);
         etEmail = view.findViewById(R.id.etEmail);
         etPhone = view.findViewById(R.id.etPhone);
         chipPrefAventura = view.findViewById(R.id.chipPrefAventura);
@@ -139,13 +186,9 @@ public class ProfileFragment extends Fragment {
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         btnOpenHistory.setOnClickListener(v -> Navigation.findNavController(view)
                 .navigate(R.id.action_profileFragment_to_activityHistoryFragment));
+        btnSelectProfileImage.setOnClickListener(v -> showPhotoSourceDialog());
         btnSave.setOnClickListener(v -> saveProfile(currentUser));
         btnLogout.setOnClickListener(v -> logout(view));
-        etPhotoUrl.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                loadProfilePhoto(etPhotoUrl.getText().toString().trim());
-            }
-        });
 
         canSaveProfile = false;
         btnSave.setEnabled(false);
@@ -198,8 +241,8 @@ public class ProfileFragment extends Fragment {
 
     private void bindUser(@NonNull UserRtdbDto user) {
         etName.setText(safe(user.name));
-        etPhotoUrl.setText(safe(user.photoUrl));
-        loadProfilePhoto(safe(user.photoUrl));
+        currentPhotoUrl = safe(user.photoUrl).trim();
+        loadProfilePhoto(currentPhotoUrl);
         etEmail.setText(isBlank(user.email)
                 ? getString(R.string.profile_email_empty)
                 : user.email);
@@ -225,12 +268,7 @@ public class ProfileFragment extends Fragment {
         String currentEmail = !isBlank(effectiveEmail) ? effectiveEmail : safe(currentUser.getEmail());
         if (isBlank(currentEmail)) currentEmail = safe(dto.email);
         final String appliedCurrentEmail = currentEmail;
-        String photoUrl = etPhotoUrl.getText().toString().trim();
-        if (!isValidPhotoUrl(photoUrl)) {
-            etPhotoUrl.setError(getString(R.string.profile_photo_invalid));
-            etPhotoUrl.requestFocus();
-            return;
-        }
+        String photoUrl = currentPhotoUrl.trim();
         String email = etEmail.getText().toString().trim();
         if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etEmail.setError(getString(R.string.error_email_invalid));
@@ -253,6 +291,7 @@ public class ProfileFragment extends Fragment {
                                 R.string.profile_email_verification_sent,
                                 Toast.LENGTH_LONG
                         ).show();
+                        signOutAndNavigateToLogin();
                     })
                     .addOnFailureListener(e -> {
                         if (!isAdded()) return;
@@ -275,7 +314,7 @@ public class ProfileFragment extends Fragment {
         progress.setVisibility(loading ? View.VISIBLE : View.GONE);
         btnSave.setEnabled(!loading && canSaveProfile);
         etName.setEnabled(!loading);
-        etPhotoUrl.setEnabled(!loading);
+        btnSelectProfileImage.setEnabled(!loading);
         etEmail.setEnabled(!loading);
         etPhone.setEnabled(!loading);
         chipPrefAventura.setEnabled(!loading);
@@ -344,11 +383,13 @@ public class ProfileFragment extends Fragment {
             @NonNull UserRtdbDto dto
     ) {
         String authEmail = safe(currentUser.getEmail()).trim();
-        if (isBlank(authEmail) || sameValue(authEmail, dto.email)) {
+        String previousEmail = safe(dto.email).trim();
+        if (isBlank(authEmail) || sameValue(authEmail, previousEmail)) {
             return;
         }
 
         dto.email = authEmail;
+        effectiveEmail = authEmail;
         Map<String, Object> updates = new LinkedHashMap<>();
         updates.put("email", authEmail);
         realtimeDatabaseApi.patchUser(effectiveUid, updates)
@@ -365,6 +406,56 @@ public class ProfileFragment extends Fragment {
                         Log.w(TAG, "Could not sync verified auth email to RTDB", t);
                     }
                 });
+        syncEmailIndexIfNeeded(previousEmail, authEmail);
+    }
+
+    private void syncEmailIndexIfNeeded(@Nullable String previousEmail, @NonNull String newEmail) {
+        if (isBlank(newEmail)) return;
+        String newKey = emailToKey(newEmail);
+        realtimeDatabaseApi.putEmailIndex(newKey, effectiveUid)
+                .enqueue(new Callback<String>() {
+                    @Override
+                    public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
+                        if (!response.isSuccessful()) {
+                            Log.w(TAG, "Could not sync new email index: " + response.code());
+                            return;
+                        }
+                        deleteOldEmailIndex(previousEmail, newEmail);
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+                        Log.w(TAG, "Could not sync new email index", t);
+                    }
+                });
+    }
+
+    private void deleteOldEmailIndex(@Nullable String previousEmail, @NonNull String newEmail) {
+        String oldEmail = safe(previousEmail).trim();
+        if (isBlank(oldEmail) || sameValue(oldEmail, newEmail)) {
+            return;
+        }
+        realtimeDatabaseApi.deleteEmailIndex(emailToKey(oldEmail))
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                        if (!response.isSuccessful()) {
+                            Log.w(TAG, "Could not delete old email index: " + response.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                        Log.w(TAG, "Could not delete old email index", t);
+                    }
+                });
+    }
+
+    @NonNull
+    private String emailToKey(@Nullable String email) {
+        return safe(email).trim().toLowerCase(Locale.ROOT)
+                .replace("@", "_at_")
+                .replace(".", "_dot_");
     }
 
     @NonNull
@@ -394,9 +485,290 @@ public class ProfileFragment extends Fragment {
         return value != null ? value : "";
     }
 
+    private void showPhotoSourceDialog() {
+        if (!isAdded()) return;
+        String[] options = {
+                getString(R.string.profile_photo_option_gallery),
+                getString(R.string.profile_photo_option_camera)
+        };
+        new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.profile_photo_source_title)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        requestGalleryAccess();
+                        return;
+                    }
+                    requestCameraAccess();
+                })
+                .show();
+    }
+
+    private void requestGalleryAccess() {
+        if (!isAdded()) return;
+        String permission = resolveGalleryPermission();
+        if (ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED) {
+            openGallery();
+            return;
+        }
+        requestGalleryPermissionLauncher.launch(permission);
+    }
+
+    @NonNull
+    private String resolveGalleryPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return Manifest.permission.READ_MEDIA_IMAGES;
+        }
+        return Manifest.permission.READ_EXTERNAL_STORAGE;
+    }
+
+    private void requestCameraAccess() {
+        if (!isAdded()) return;
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            openCamera();
+            return;
+        }
+        requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+    }
+
+    private void openGallery() {
+        pickProfileImageLauncher.launch("image/*");
+    }
+
+    private void openCamera() {
+        try {
+            File captureFile = createPendingCameraPhotoFile(requireContext().getApplicationContext());
+            Uri captureUri = FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".fileprovider",
+                    captureFile
+            );
+            pendingCameraPhotoFile = captureFile;
+            pendingCameraPhotoUri = captureUri;
+            takeProfilePhotoLauncher.launch(captureUri);
+        } catch (IOException e) {
+            Log.e(TAG, "Could not prepare camera output file", e);
+            Toast.makeText(requireContext(), R.string.profile_photo_store_error, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void handleSelectedProfileImage(@Nullable Uri selectedImageUri) {
+        if (selectedImageUri == null || !isAdded()) return;
+        Context appContext = requireContext().getApplicationContext();
+        new Thread(() -> {
+            try {
+                String storedPhotoUrl = copyProfileImageToInternalStorage(appContext, selectedImageUri);
+                applyStoredPhotoUrl(storedPhotoUrl);
+            } catch (IOException e) {
+                Log.e(TAG, "Could not persist selected profile image", e);
+                showPhotoStoreError();
+            }
+        }).start();
+    }
+
+    private void handleCapturedProfilePhoto(boolean wasSaved) {
+        if (!isAdded()) return;
+        File capturedFile = pendingCameraPhotoFile;
+        if (!wasSaved || capturedFile == null || !capturedFile.exists()) {
+            clearPendingCameraPhoto(true);
+            return;
+        }
+        Context appContext = requireContext().getApplicationContext();
+        new Thread(() -> {
+            try {
+                String storedPhotoUrl = persistCapturedPhotoFile(appContext, capturedFile);
+                clearPendingCameraPhoto(true);
+                applyStoredPhotoUrl(storedPhotoUrl);
+            } catch (IOException e) {
+                Log.e(TAG, "Could not persist captured profile image", e);
+                clearPendingCameraPhoto(true);
+                showPhotoStoreError();
+            }
+        }).start();
+    }
+
+    private void applyStoredPhotoUrl(@NonNull String storedPhotoUrl) {
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+        activity.runOnUiThread(() -> {
+            if (!isAdded()) return;
+            currentPhotoUrl = storedPhotoUrl;
+            loadProfilePhoto(currentPhotoUrl);
+            Toast.makeText(requireContext(), R.string.profile_photo_selected, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void showPhotoStoreError() {
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+        activity.runOnUiThread(() -> {
+            if (!isAdded()) return;
+            Toast.makeText(requireContext(), R.string.profile_photo_store_error, Toast.LENGTH_LONG).show();
+        });
+    }
+
+    @NonNull
+    private String copyProfileImageToInternalStorage(@NonNull Context context, @NonNull Uri sourceUri)
+            throws IOException {
+        File directory = ensureProfileImageDirectory(context);
+        String extension = resolveImageExtension(context.getContentResolver(), sourceUri);
+        File destination = new File(directory, buildProfileImageFileName(extension));
+
+        try (InputStream inputStream = context.getContentResolver().openInputStream(sourceUri)) {
+            if (inputStream == null) {
+                throw new IOException("Selected image stream is null");
+            }
+            try (OutputStream outputStream = new FileOutputStream(destination, false)) {
+                byte[] buffer = new byte[8 * 1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                outputStream.flush();
+            }
+        }
+
+        deleteOtherStoredProfileImages(directory, destination);
+        return Uri.fromFile(destination).toString();
+    }
+
+    @NonNull
+    private String persistCapturedPhotoFile(@NonNull Context context, @NonNull File capturedFile)
+            throws IOException {
+        File directory = ensureProfileImageDirectory(context);
+        File destination = new File(directory, buildProfileImageFileName("jpg"));
+
+        try (InputStream inputStream = new FileInputStream(capturedFile);
+             OutputStream outputStream = new FileOutputStream(destination, false)) {
+            byte[] buffer = new byte[8 * 1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            outputStream.flush();
+        }
+
+        deleteOtherStoredProfileImages(directory, destination);
+        return Uri.fromFile(destination).toString();
+    }
+
+    @NonNull
+    private File ensureProfileImageDirectory(@NonNull Context context) throws IOException {
+        File directory = new File(context.getFilesDir(), PROFILE_IMAGE_DIR);
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw new IOException("Could not create internal profile image directory");
+        }
+        return directory;
+    }
+
+    @NonNull
+    private File createPendingCameraPhotoFile(@NonNull Context context) throws IOException {
+        File directory = ensureProfileImageDirectory(context);
+        File captureFile = new File(directory, buildCameraCaptureFileName("jpg"));
+        if (captureFile.exists() && !captureFile.delete()) {
+            throw new IOException("Could not replace pending camera photo file");
+        }
+        if (!captureFile.createNewFile()) {
+            throw new IOException("Could not create pending camera photo file");
+        }
+        return captureFile;
+    }
+
+    @NonNull
+    private String resolveImageExtension(@NonNull ContentResolver resolver, @NonNull Uri sourceUri) {
+        String mimeType = resolver.getType(sourceUri);
+        if (!isBlank(mimeType)) {
+            String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+            if (!isBlank(extension)) {
+                return extension.toLowerCase(Locale.ROOT);
+            }
+        }
+
+        String path = sourceUri.getLastPathSegment();
+        if (!isBlank(path)) {
+            int lastDot = path.lastIndexOf('.');
+            if (lastDot >= 0 && lastDot < path.length() - 1) {
+                return path.substring(lastDot + 1).toLowerCase(Locale.ROOT);
+            }
+        }
+        return "jpg";
+    }
+
+    @NonNull
+    private String buildProfileImageFileName(@NonNull String extension) {
+        String safeUid = safe(effectiveUid).trim().replaceAll("[^a-zA-Z0-9._-]", "_");
+        if (safeUid.isEmpty()) {
+            safeUid = "user";
+        }
+        return PROFILE_IMAGE_FILE_PREFIX + safeUid + "." + extension;
+    }
+
+    @NonNull
+    private String buildCameraCaptureFileName(@NonNull String extension) {
+        String safeUid = safe(effectiveUid).trim().replaceAll("[^a-zA-Z0-9._-]", "_");
+        if (safeUid.isEmpty()) {
+            safeUid = "user";
+        }
+        return PROFILE_IMAGE_FILE_PREFIX + safeUid + PROFILE_IMAGE_CAPTURE_SUFFIX + "." + extension;
+    }
+
+    private void clearPendingCameraPhoto(boolean deleteFile) {
+        File pendingFile = pendingCameraPhotoFile;
+        pendingCameraPhotoUri = null;
+        pendingCameraPhotoFile = null;
+        if (!deleteFile || pendingFile == null || !pendingFile.exists()) return;
+        if (!pendingFile.delete()) {
+            Log.w(TAG, "Could not delete pending camera photo file: " + pendingFile.getAbsolutePath());
+        }
+    }
+
+    private void deleteOtherStoredProfileImages(@NonNull File directory, @NonNull File keepFile) {
+        String prefix = PROFILE_IMAGE_FILE_PREFIX + safe(effectiveUid).trim().replaceAll("[^a-zA-Z0-9._-]", "_");
+        if (prefix.equals(PROFILE_IMAGE_FILE_PREFIX)) {
+            prefix = PROFILE_IMAGE_FILE_PREFIX + "user";
+        }
+        File[] files = directory.listFiles();
+        if (files == null) return;
+        for (File file : files) {
+            if (!file.isFile() || file.equals(keepFile)) continue;
+            if (!file.getName().startsWith(prefix + ".")) continue;
+            if (!file.delete()) {
+                Log.w(TAG, "Could not delete old internal profile image: " + file.getAbsolutePath());
+            }
+        }
+    }
+
+    @Nullable
+    private Object resolvePhotoModel(@Nullable String photoUrl) {
+        String safePhotoUrl = safe(photoUrl).trim();
+        if (safePhotoUrl.isEmpty()) {
+            return null;
+        }
+
+        Uri uri = Uri.parse(safePhotoUrl);
+        String scheme = uri.getScheme();
+        if (scheme == null || scheme.trim().isEmpty()) {
+            File localFile = new File(safePhotoUrl);
+            return localFile.exists() ? localFile : null;
+        }
+        if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
+            return safePhotoUrl;
+        }
+        if ("file".equalsIgnoreCase(scheme)) {
+            String path = uri.getPath();
+            if (isBlank(path)) {
+                return null;
+            }
+            File localFile = new File(path);
+            return localFile.exists() ? uri : null;
+        }
+        return uri;
+    }
+
     private void loadProfilePhoto(@Nullable String photoUrl) {
         if (!isAdded()) return;
-        if (photoUrl == null || photoUrl.trim().isEmpty()) {
+        Object photoModel = resolvePhotoModel(photoUrl);
+        if (photoModel == null) {
             Glide.with(this).clear(ivProfilePhoto);
             ivProfilePhoto.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             int pad = dpToPx(18);
@@ -411,7 +783,7 @@ public class ProfileFragment extends Fragment {
         ivProfilePhoto.setColorFilter(null);
         ivProfilePhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
         Glide.with(this)
-                .load(photoUrl.trim())
+                .load(photoModel)
                 .circleCrop()
                 .placeholder(R.drawable.ic_nav_person)
                 .error(R.drawable.ic_nav_person)
@@ -554,17 +926,6 @@ public class ProfileFragment extends Fragment {
         return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 
-    private boolean isValidPhotoUrl(@Nullable String raw) {
-        if (raw == null || raw.trim().isEmpty()) return true;
-        Uri uri = Uri.parse(raw.trim());
-        String scheme = uri.getScheme();
-        String host = uri.getHost();
-        return scheme != null
-                && "https".equalsIgnoreCase(scheme)
-                && host != null
-                && !host.trim().isEmpty();
-    }
-
     @NonNull
     private String resolveEmailUpdateErrorMessage(@Nullable Exception e) {
         if (e instanceof FirebaseAuthRecentLoginRequiredException) {
@@ -598,12 +959,18 @@ public class ProfileFragment extends Fragment {
         return getString(R.string.profile_email_update_error);
     }
 
-    private void logout(@NonNull View view) {
+    private void signOutAndNavigateToLogin() {
         SessionStore.clear(requireContext());
         FirebaseAuth.getInstance().signOut();
+        View currentView = getView();
+        if (currentView == null) return;
         NavOptions navOptions = new NavOptions.Builder()
                 .setPopUpTo(R.id.exploreFragment, true)
                 .build();
-        Navigation.findNavController(view).navigate(R.id.loginFragment, null, navOptions);
+        Navigation.findNavController(currentView).navigate(R.id.loginFragment, null, navOptions);
+    }
+
+    private void logout(@NonNull View view) {
+        signOutAndNavigateToLogin();
     }
 }

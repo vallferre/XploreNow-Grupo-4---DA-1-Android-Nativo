@@ -104,4 +104,7 @@ public interface RealtimeDatabaseApi {
 
     @GET("user_emails/{emailKey}.json")
     Call<String> getUidByEmail(@Path("emailKey") String emailKey);
+
+    @DELETE("user_emails/{emailKey}.json")
+    Call<Void> deleteEmailIndex(@Path("emailKey") String emailKey);
 }
