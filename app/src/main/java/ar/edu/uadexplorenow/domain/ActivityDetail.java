@@ -35,6 +35,50 @@ import java.util.Map;
  */
 public final class ActivityDetail {
 
+    public static final class GeoPoint {
+        public final double lat;
+        public final double lng;
+
+        public GeoPoint(double lat, double lng) {
+            this.lat = lat;
+            this.lng = lng;
+        }
+
+        public boolean isValid() {
+            return lat >= -90d && lat <= 90d && lng >= -180d && lng <= 180d;
+        }
+    }
+
+    public static final class ItineraryPoint {
+        @NonNull
+        public final String id;
+        @NonNull
+        public final String title;
+        @NonNull
+        public final String description;
+        @Nullable
+        public final GeoPoint coords;
+        public final long order;
+
+        public ItineraryPoint(
+                @NonNull String id,
+                @NonNull String title,
+                @NonNull String description,
+                @Nullable GeoPoint coords,
+                long order
+        ) {
+            this.id = id;
+            this.title = title;
+            this.description = description;
+            this.coords = coords != null && coords.isValid() ? coords : null;
+            this.order = order;
+        }
+
+        public boolean hasValidCoordinates() {
+            return coords != null && coords.isValid();
+        }
+    }
+
     public static final class CancellationPolicy {
         public final String type;
         public final String description;
@@ -123,10 +167,13 @@ public final class ActivityDetail {
     public final long reviewCount;
     public final String guideName;
     public final String meetingPoint;
+    @Nullable
+    public final GeoPoint meetingPointCoords;
     public final String description;
     public final List<String> imageUrls;
     public final List<String> includes;
     public final List<String> languages;
+    public final List<ItineraryPoint> itineraryPoints;
     public final String day;
     public final String dateIso;
     public final List<BookingSlot> bookingSlots;
@@ -146,10 +193,12 @@ public final class ActivityDetail {
             long reviewCount,
             String guideName,
             String meetingPoint,
+            @Nullable GeoPoint meetingPointCoords,
             String description,
             List<String> imageUrls,
             List<String> includes,
             List<String> languages,
+            List<ItineraryPoint> itineraryPoints,
             String day,
             String dateIso,
             List<BookingSlot> bookingSlots,
@@ -167,10 +216,14 @@ public final class ActivityDetail {
         this.reviewCount = reviewCount;
         this.guideName = guideName != null ? guideName : "";
         this.meetingPoint = meetingPoint != null ? meetingPoint : "";
+        this.meetingPointCoords = meetingPointCoords != null && meetingPointCoords.isValid()
+                ? meetingPointCoords
+                : null;
         this.description = description != null ? description : "";
         this.imageUrls = imageUrls != null ? imageUrls : Collections.emptyList();
         this.includes = includes != null ? includes : Collections.emptyList();
         this.languages = languages != null ? languages : Collections.emptyList();
+        this.itineraryPoints = itineraryPoints != null ? itineraryPoints : Collections.emptyList();
         this.day = day != null ? day : "";
         this.dateIso = dateIso != null ? dateIso : "";
         this.bookingSlots = bookingSlots != null ? bookingSlots : Collections.emptyList();
@@ -193,6 +246,7 @@ public final class ActivityDetail {
         long reviews = longVal(doc.getLong("review_count"));
         String guide = str(doc.getString("guide_name"));
         String meeting = str(doc.getString("meeting_point"));
+        GeoPoint meetingCoords = parseGeoPointFromFirestore(doc.get("meeting_point_coords"));
         String desc = str(doc.getString("description"));
         if (desc.isEmpty()) {
             desc = buildFallbackDescription(name, destination, category);
@@ -210,8 +264,9 @@ public final class ActivityDetail {
 
         return new ActivityDetail(
                 id, name, destination, category, duration, price, currency,
-                spots, rating, reviews, guide, meeting, desc,
+                spots, rating, reviews, guide, meeting, meetingCoords, desc,
                 urls, parseStringList(doc.get("includes")), parseStringList(doc.get("language")),
+                parseItineraryPointsFromFirestore(doc.get("itinerary_points")),
                 day, dateIso, buildSingleSlotList(dateIso, spots), policy
         );
     }
@@ -231,6 +286,7 @@ public final class ActivityDetail {
         long reviews = raw.reviewCount != null ? raw.reviewCount : 0L;
         String guide = str(raw.guideName);
         String meeting = str(raw.meetingPoint);
+        GeoPoint meetingCoords = parseGeoPoint(raw.meetingPointCoords);
         String desc = str(raw.description);
         if (desc.isEmpty()) {
             desc = buildFallbackDescription(raw.name, destination, category);
@@ -269,8 +325,9 @@ public final class ActivityDetail {
 
         return new ActivityDetail(
                 stableId, raw.name, destination, category, duration, price, currency,
-                spots, rating, reviews, guide, meeting, desc,
+                spots, rating, reviews, guide, meeting, meetingCoords, desc,
                 urls, includes, langs,
+                parseItineraryPoints(raw.itineraryPoints),
                 day, dateIso, parseBookingSlots(raw.schedule, dateIso, spots), policy
         );
     }
@@ -649,6 +706,135 @@ public final class ActivityDetail {
         return out;
     }
 
+    @Nullable
+    private static GeoPoint parseGeoPoint(@Nullable ActivityRtdbDto.CoordinatesDto raw) {
+        if (raw == null || raw.lat == null || raw.lng == null) {
+            return null;
+        }
+        GeoPoint geoPoint = new GeoPoint(raw.lat, raw.lng);
+        return geoPoint.isValid() ? geoPoint : null;
+    }
+
+    @NonNull
+    private static List<ItineraryPoint> parseItineraryPoints(@Nullable JsonElement raw) {
+        List<ItineraryPoint> out = new ArrayList<>();
+        if (raw == null || raw.isJsonNull()) {
+            return out;
+        }
+        parseItineraryPointElement(raw, "itinerary_point", out);
+        out.sort(Comparator
+                .comparingLong(ActivityDetail::itinerarySortKey)
+                .thenComparing(point -> point.id));
+        return out;
+    }
+
+    private static void parseItineraryPointElement(
+            @Nullable JsonElement raw,
+            @NonNull String fallbackId,
+            @NonNull List<ItineraryPoint> out
+    ) {
+        if (raw == null || raw.isJsonNull()) {
+            return;
+        }
+        if (raw.isJsonArray()) {
+            JsonArray array = raw.getAsJsonArray();
+            for (int i = 0; i < array.size(); i++) {
+                parseItineraryPointElement(array.get(i), fallbackId + "_" + i, out);
+            }
+            return;
+        }
+        if (!raw.isJsonObject()) {
+            return;
+        }
+
+        JsonObject obj = raw.getAsJsonObject();
+        if (looksLikeItineraryPoint(obj)) {
+            ItineraryPoint point = parseItineraryPointObject(obj, fallbackId);
+            if (point != null) {
+                out.add(point);
+            }
+            return;
+        }
+
+        for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+            parseItineraryPointElement(entry.getValue(), entry.getKey(), out);
+        }
+    }
+
+    private static boolean looksLikeItineraryPoint(@NonNull JsonObject obj) {
+        return hasAny(obj, "lat", "lng", "title", "description", "order");
+    }
+
+    @Nullable
+    private static ItineraryPoint parseItineraryPointObject(
+            @NonNull JsonObject obj,
+            @NonNull String fallbackId
+    ) {
+        GeoPoint coords = parseGeoPoint(
+                stringOrDouble(obj, "lat"),
+                stringOrDouble(obj, "lng"));
+        if (coords == null) {
+            return null;
+        }
+        String title = firstNonBlank(stringOrNumber(obj, "title"), fallbackId);
+        String description = firstNonBlank(stringOrNumber(obj, "description"));
+        long order = longValue(obj, "order");
+        return new ItineraryPoint(fallbackId, title, description, coords, order);
+    }
+
+    private static long itinerarySortKey(@NonNull ItineraryPoint point) {
+        return point.order > 0 ? point.order : Long.MAX_VALUE;
+    }
+
+    @Nullable
+    private static GeoPoint parseGeoPoint(@Nullable Double lat, @Nullable Double lng) {
+        if (lat == null || lng == null) {
+            return null;
+        }
+        GeoPoint geoPoint = new GeoPoint(lat, lng);
+        return geoPoint.isValid() ? geoPoint : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    private static GeoPoint parseGeoPointFromFirestore(@Nullable Object raw) {
+        if (!(raw instanceof Map)) {
+            return null;
+        }
+        Map<String, Object> map = (Map<String, Object>) raw;
+        return parseGeoPoint(objectToDouble(map.get("lat")), objectToDouble(map.get("lng")));
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    private static List<ItineraryPoint> parseItineraryPointsFromFirestore(@Nullable Object raw) {
+        List<ItineraryPoint> out = new ArrayList<>();
+        if (!(raw instanceof Map)) {
+            return out;
+        }
+        Map<String, Object> map = (Map<String, Object>) raw;
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (!(entry.getValue() instanceof Map)) {
+                continue;
+            }
+            Map<String, Object> pointMap = (Map<String, Object>) entry.getValue();
+            GeoPoint coords = parseGeoPoint(
+                    objectToDouble(pointMap.get("lat")),
+                    objectToDouble(pointMap.get("lng")));
+            if (coords == null) {
+                continue;
+            }
+            String title = firstNonBlank(objectToString(pointMap.get("title")), entry.getKey());
+            String description = firstNonBlank(objectToString(pointMap.get("description")));
+            long order = objectToLong(pointMap.get("order"));
+            out.add(new ItineraryPoint(entry.getKey(), title, description, coords, order));
+        }
+        out.sort(Comparator
+                .comparingLong(ActivityDetail::itinerarySortKey)
+                .thenComparing(point -> point.id));
+        return out;
+    }
+
     @NonNull
     private static String capitalizeDay(@NonNull String d) {
         if (d.isEmpty()) return "";
@@ -766,6 +952,51 @@ public final class ActivityDetail {
             if (primitive.isNumber()) return primitive.getAsLong();
             if (primitive.isString()) return Long.parseLong(primitive.getAsString().trim());
         } catch (NumberFormatException ignored) {
+        }
+        return 0L;
+    }
+
+    @Nullable
+    private static Double stringOrDouble(@NonNull JsonObject obj, @NonNull String key) {
+        JsonElement value = obj.get(key);
+        if (value == null || value.isJsonNull() || !value.isJsonPrimitive()) return null;
+        try {
+            JsonPrimitive primitive = value.getAsJsonPrimitive();
+            if (primitive.isNumber()) return primitive.getAsDouble();
+            if (primitive.isString()) return Double.parseDouble(primitive.getAsString().trim());
+        } catch (NumberFormatException ignored) {
+        }
+        return null;
+    }
+
+    @NonNull
+    private static String objectToString(@Nullable Object raw) {
+        return raw instanceof String ? (String) raw : "";
+    }
+
+    @Nullable
+    private static Double objectToDouble(@Nullable Object raw) {
+        if (raw instanceof Double) return (Double) raw;
+        if (raw instanceof Long) return ((Long) raw).doubleValue();
+        if (raw instanceof Integer) return ((Integer) raw).doubleValue();
+        if (raw instanceof String) {
+            try {
+                return Double.parseDouble(((String) raw).trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private static long objectToLong(@Nullable Object raw) {
+        if (raw instanceof Long) return (Long) raw;
+        if (raw instanceof Integer) return ((Integer) raw).longValue();
+        if (raw instanceof Double) return Math.round((Double) raw);
+        if (raw instanceof String) {
+            try {
+                return Long.parseLong(((String) raw).trim());
+            } catch (NumberFormatException ignored) {
+            }
         }
         return 0L;
     }

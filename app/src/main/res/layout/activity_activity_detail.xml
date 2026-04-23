@@ -345,6 +345,19 @@
                         tools:text="📍 Calle Mayor 1" />
                 </com.google.android.material.card.MaterialCardView>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewLocation"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/detail_view_location"
+                    android:textAllCaps="false"
+                    android:textColor="@color/filter_primary"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="@color/filter_primary"
+                    app:strokeWidth="1dp" />
+
                 <TextView
                     android:id="@+id/tvCancellationTitle"
                     android:layout_width="match_parent"
