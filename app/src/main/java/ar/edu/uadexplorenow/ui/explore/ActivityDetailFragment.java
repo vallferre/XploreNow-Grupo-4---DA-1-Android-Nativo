@@ -1,6 +1,8 @@
 package ar.edu.uadexplorenow.ui.explore;
 
+import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Bundle;
@@ -137,6 +139,7 @@ public class ActivityDetailFragment extends Fragment {
         TextView tvMeetingTitle = view.findViewById(R.id.tvMeetingTitle);
         View cardMeeting = view.findViewById(R.id.cardMeetingPoint);
         TextView tvMeetingPoint = view.findViewById(R.id.tvMeetingPoint);
+        MaterialButton btnViewLocation = view.findViewById(R.id.btnViewLocation);
         TextView tvWhenLabel = view.findViewById(R.id.tvWhenLabel);
         TextView tvActivityWhen = view.findViewById(R.id.tvActivityWhen);
         TextView tvCancellationTitle = view.findViewById(R.id.tvCancellationTitle);
@@ -186,7 +189,7 @@ public class ActivityDetailFragment extends Fragment {
                         tvHeroCategory, tvTitle, tvSubtitle, tvWhenLabel, tvActivityWhen,
                         tvDuration, tvLanguage, tvCupos, tvGuide, tvDescription,
                         tvIncludesTitle, includesContainer,
-                        tvMeetingTitle, cardMeeting, tvMeetingPoint,
+                        tvMeetingTitle, cardMeeting, tvMeetingPoint, btnViewLocation,
                         tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc,
                         tvBottomPrice, btnReserve);
                 setupFavoriteAfterLoad(activityId, detail);
@@ -277,6 +280,7 @@ public class ActivityDetailFragment extends Fragment {
             @NonNull TextView tvMeetingTitle,
             @NonNull View cardMeeting,
             @NonNull TextView tvMeetingPoint,
+            @NonNull MaterialButton btnViewLocation,
             @NonNull TextView tvCancellationTitle,
             @NonNull View cardCancellation,
             @NonNull TextView tvCancellationType,
@@ -341,15 +345,102 @@ public class ActivityDetailFragment extends Fragment {
         if (detail.meetingPoint.isEmpty()) {
             tvMeetingTitle.setVisibility(View.GONE);
             cardMeeting.setVisibility(View.GONE);
+            btnViewLocation.setVisibility(View.GONE);
         } else {
             tvMeetingTitle.setVisibility(View.VISIBLE);
             cardMeeting.setVisibility(View.VISIBLE);
-            tvMeetingPoint.setText("Punto de encuentro: " + detail.meetingPoint);
+            btnViewLocation.setVisibility(View.VISIBLE);
+            tvMeetingPoint.setText(getString(R.string.detail_meeting_point_fmt, detail.meetingPoint));
+            btnViewLocation.setOnClickListener(v -> openMeetingPoint(detail));
         }
 
         bindCancellation(detail, tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc);
         tvBottomPrice.setText(detail.priceLarge());
         updateReserveButton(detail, reserveButton);
+    }
+
+    private void openMeetingPoint(@NonNull ActivityDetail detail) {
+        if (detail.meetingPoint.isEmpty()) {
+            return;
+        }
+        ActivityDetail.GeoPoint meetingPointCoords = detail.meetingPointCoords;
+        if (meetingPointCoords != null) {
+            openMeetingPointWithCoordinates(detail.meetingPoint, meetingPointCoords);
+            return;
+        }
+
+        String encodedMeetingPoint = Uri.encode(detail.meetingPoint);
+
+        Intent googleMapsIntent = new Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("geo:0,0?q=" + encodedMeetingPoint + "(" + encodedMeetingPoint + ")")
+        );
+        googleMapsIntent.setPackage("com.google.android.apps.maps");
+        if (startExternalIntent(googleMapsIntent)) {
+            return;
+        }
+
+        Intent genericMapsIntent = new Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("geo:0,0?q=" + encodedMeetingPoint + "(" + encodedMeetingPoint + ")")
+        );
+        if (startExternalIntent(genericMapsIntent)) {
+            return;
+        }
+
+        Intent browserFallbackIntent = new Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.google.com/maps/search/?api=1&query=" + encodedMeetingPoint)
+        );
+        if (startExternalIntent(browserFallbackIntent)) {
+            return;
+        }
+
+        Toast.makeText(requireContext(), R.string.detail_map_app_missing, Toast.LENGTH_LONG).show();
+    }
+
+    private void openMeetingPointWithCoordinates(
+            @NonNull String meetingPoint,
+            @NonNull ActivityDetail.GeoPoint meetingPointCoords
+    ) {
+        String encodedLabel = Uri.encode(meetingPoint);
+        String latLng = meetingPointCoords.lat + "," + meetingPointCoords.lng;
+
+        Intent googleMapsIntent = new Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("geo:" + latLng + "?q=" + latLng + "(" + encodedLabel + ")")
+        );
+        googleMapsIntent.setPackage("com.google.android.apps.maps");
+        if (startExternalIntent(googleMapsIntent)) {
+            return;
+        }
+
+        Intent genericMapsIntent = new Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("geo:" + latLng + "?q=" + latLng + "(" + encodedLabel + ")")
+        );
+        if (startExternalIntent(genericMapsIntent)) {
+            return;
+        }
+
+        Intent browserFallbackIntent = new Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.google.com/maps/search/?api=1&query=" + latLng)
+        );
+        if (startExternalIntent(browserFallbackIntent)) {
+            return;
+        }
+
+        Toast.makeText(requireContext(), R.string.detail_map_app_missing, Toast.LENGTH_LONG).show();
+    }
+
+    private boolean startExternalIntent(@NonNull Intent intent) {
+        if (!isAdded() || intent.resolveActivity(requireContext().getPackageManager()) == null) {
+            return false;
+        }
+        Toast.makeText(requireContext(), R.string.detail_opening_location, Toast.LENGTH_SHORT).show();
+        startActivity(intent);
+        return true;
     }
 
     private void updateReserveButton(@NonNull ActivityDetail detail, @NonNull MaterialButton reserveButton) {

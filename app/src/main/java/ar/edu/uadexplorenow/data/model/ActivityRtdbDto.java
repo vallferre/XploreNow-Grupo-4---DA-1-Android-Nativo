@@ -58,6 +58,18 @@ public class ActivityRtdbDto {
     @SerializedName("meeting_point")
     public String meetingPoint;
 
+    @SerializedName(
+            value = "meeting_point_coords",
+            alternate = {"meetingPointCoords"}
+    )
+    public CoordinatesDto meetingPointCoords;
+
+    @SerializedName(
+            value = "itinerary_points",
+            alternate = {"itineraryPoints"}
+    )
+    public JsonElement itineraryPoints;
+
     @SerializedName("description")
     public String description;
 
@@ -105,6 +117,14 @@ public class ActivityRtdbDto {
 
         @SerializedName("free_cancel_hours")
         public Long freeCancelHours;
+    }
+
+    public static class CoordinatesDto {
+        @SerializedName("lat")
+        public Double lat;
+
+        @SerializedName("lng")
+        public Double lng;
     }
 
     /** {@code rtdbPathKey} es la clave real en {@code activities/…} para REST; el campo JSON {@code id} puede diferir. */
