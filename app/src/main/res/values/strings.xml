@@ -245,4 +245,10 @@
     <string name="explore_offline_cache">Sin conexión — mostrando actividades guardadas</string>
     <string name="history_offline_cache">Sin conexión — mostrando reservas guardadas</string>
     <string name="offline_banner">⚠ Modo sin conexión — datos guardados localmente</string>
+    <string name="news_section_title">Novedades y ofertas</string>
+    <string name="news_detail_title">Novedad</string>
+    <string name="news_load_error">No se pudieron cargar las novedades</string>
+    <string name="news_detail_missing">No encontramos esta novedad</string>
+    <string name="news_detail_related_activity">Esta novedad esta vinculada a una actividad reservable.</string>
+    <string name="news_back">Volver</string>
 </resources>

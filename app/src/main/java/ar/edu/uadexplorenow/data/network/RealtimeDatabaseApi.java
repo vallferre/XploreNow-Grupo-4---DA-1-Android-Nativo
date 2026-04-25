@@ -25,6 +25,9 @@ public interface RealtimeDatabaseApi {
     @GET("activities.json")
     Call<JsonElement> getActivities();
 
+    @GET("news.json")
+    Call<JsonElement> getNews();
+
     @GET("activities/{id}.json")
     Call<ActivityRtdbDto> getActivity(@Path("id") String id);
 
