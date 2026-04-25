@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import ar.edu.uadexplorenow.data.local.db.CachedReservationDao;
+import ar.edu.uadexplorenow.data.local.db.CachedReservationEntity;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
@@ -28,9 +30,14 @@ public final class ReservationRepository {
     }
 
     private final RealtimeDatabaseApi realtimeDatabaseApi;
+    private final CachedReservationDao cachedReservationDao;
 
-    public ReservationRepository(@NonNull RealtimeDatabaseApi realtimeDatabaseApi) {
+    public ReservationRepository(
+            @NonNull RealtimeDatabaseApi realtimeDatabaseApi,
+            @NonNull CachedReservationDao cachedReservationDao
+    ) {
         this.realtimeDatabaseApi = realtimeDatabaseApi;
+        this.cachedReservationDao = cachedReservationDao;
     }
 
     public void createReservation(
@@ -77,6 +84,7 @@ public final class ReservationRepository {
                                     return;
                                 }
                                 syncActivitySpotsBestEffort(activityId, Math.max(0, detail.availableSpots - participants));
+                                cacheNewReservation(uid, reservationId, detail, latestSlot != null ? latestSlot : selectedSlot, participants);
                                 callback.onSuccess();
                             }
 
@@ -132,6 +140,7 @@ public final class ReservationRepository {
                                                     long restoredSpots = detail.availableSpots + Math.max(1, reservation.participants);
                                                     syncActivitySpotsBestEffort(reservation.activityId, restoredSpots);
                                                 }
+                                                updateCachedStatus(reservation.reservationId, ReservationStatus.CANCELLED);
                                                 callback.onSuccess();
                                             }
 
@@ -156,6 +165,7 @@ public final class ReservationRepository {
                             @Override
                             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                                 if (response.isSuccessful()) {
+                                    updateCachedStatus(reservation.reservationId, ReservationStatus.CANCELLED);
                                     callback.onSuccess();
                                 } else {
                                     callback.onError("No se pudo cancelar la reserva. HTTP " + response.code());
@@ -190,6 +200,7 @@ public final class ReservationRepository {
                     @Override
                     public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                         if (response.isSuccessful()) {
+                            updateCachedStatus(reservation.reservationId, ReservationStatus.FINISHED);
                             callback.onSuccess();
                         } else {
                             Log.w(TAG, "No se pudo marcar la reserva como finalizada. HTTP " + response.code());
@@ -221,6 +232,45 @@ public final class ReservationRepository {
                 Log.w(TAG, "No se pudieron sincronizar cupos para " + activityId, t);
             }
         });
+    }
+
+    private void cacheNewReservation(
+            @NonNull String uid,
+            @NonNull String reservationId,
+            @NonNull ActivityDetail detail,
+            @NonNull ActivityDetail.BookingSlot slot,
+            int participants
+    ) {
+        ReservationItem item = ReservationItem.fromCache(
+                reservationId,
+                detail.id,
+                detail.name,
+                detail.destination,
+                detail.guideName,
+                detail.category,
+                detail.durationMinutes,
+                participants,
+                ReservationStatus.CONFIRMED,
+                slot.startAtIso,
+                slot.formattedDate(),
+                slot.formattedTime(),
+                detail.imageUrls.isEmpty() ? "" : detail.imageUrls.get(0),
+                detail.meetingPoint,
+                null,
+                detail.price,
+                detail.price * participants,
+                detail.currency,
+                detail.description,
+                detail.cancellationPolicy != null ? detail.cancellationPolicy.type : "",
+                detail.cancellationPolicy != null ? detail.cancellationPolicy.description : "",
+                detail.cancellationPolicy != null ? detail.cancellationPolicy.freeCancelHours : 0
+        );
+        CachedReservationEntity entity = CachedReservationEntity.fromDomain(uid, item);
+        new Thread(() -> cachedReservationDao.insert(entity)).start();
+    }
+
+    private void updateCachedStatus(@NonNull String reservationId, @NonNull String status) {
+        new Thread(() -> cachedReservationDao.updateStatus(reservationId, status)).start();
     }
 
     @NonNull

@@ -121,6 +121,41 @@ public final class ReservationItem {
     }
 
     @NonNull
+    public static ReservationItem fromCache(
+            @NonNull String reservationId,
+            @NonNull String activityId,
+            @NonNull String activityName,
+            @NonNull String destination,
+            @NonNull String guideName,
+            @NonNull String category,
+            long durationMinutes,
+            int participants,
+            @NonNull String status,
+            @NonNull String scheduledAtValue,
+            @NonNull String selectedDateLabel,
+            @NonNull String selectedTimeLabel,
+            @NonNull String imageUrl,
+            @NonNull String meetingPoint,
+            @Nullable Double userRating,
+            double pricePerPerson,
+            double totalPrice,
+            @NonNull String currency,
+            @NonNull String description,
+            @NonNull String cancellationType,
+            @NonNull String cancellationDescription,
+            long cancellationFreeHours
+    ) {
+        DateInfo dateInfo = resolveDateInfo(scheduledAtValue);
+        return new ReservationItem(
+                reservationId, activityId, activityName, destination, guideName, category,
+                durationMinutes, participants, status, scheduledAtValue, selectedDateLabel,
+                selectedTimeLabel, imageUrl, meetingPoint, userRating, pricePerPerson,
+                totalPrice, currency, description, cancellationType, cancellationDescription,
+                cancellationFreeHours, dateInfo.epochMillis, dateInfo.localDate
+        );
+    }
+
+    @NonNull
     public static List<ReservationItem> buildList(
             @Nullable UserRtdbDto user,
             @NonNull Map<String, ActivityDetail> detailById

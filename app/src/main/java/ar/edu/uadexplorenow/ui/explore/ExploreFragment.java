@@ -34,6 +34,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.FavoritesRepository;
+import ar.edu.uadexplorenow.data.local.cache.UserProfileFileCache;
+import ar.edu.uadexplorenow.data.local.db.CachedActivityDao;
+import ar.edu.uadexplorenow.data.local.db.CachedActivityEntity;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.model.FavoriteRtdbDto;
@@ -54,6 +57,8 @@ import com.google.gson.JsonElement;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -81,6 +86,12 @@ public class ExploreFragment extends Fragment {
     Gson gson;
     @Inject
     FavoritesRepository favoritesRepository;
+    @Inject
+    CachedActivityDao cachedActivityDao;
+    @Inject
+    UserProfileFileCache userProfileFileCache;
+
+    private final ExecutorService cacheExecutor = Executors.newSingleThreadExecutor();
 
     private static final String TAG_ALL = "";
     private static final String PREF_AVENTURA = "aventura";
@@ -285,13 +296,34 @@ public class ExploreFragment extends Fragment {
                 Collections.sort(allActivities, (a, b) -> a.name.compareToIgnoreCase(b.name));
                 recomputeCatalogMaxPrice();
                 applyFilters();
+                final List<ActivityItem> toCache = new ArrayList<>(allActivities);
+                cacheExecutor.execute(() -> {
+                    cachedActivityDao.deleteAll();
+                    cachedActivityDao.insertAll(CachedActivityEntity.fromList(toCache));
+                });
             }
 
             @Override
             public void onFailure(@NonNull Call<JsonElement> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 progress.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), R.string.explore_load_error, Toast.LENGTH_LONG).show();
+                cacheExecutor.execute(() -> {
+                    List<CachedActivityEntity> cached = cachedActivityDao.getAll();
+                    android.app.Activity act = getActivity();
+                    if (act == null) return;
+                    act.runOnUiThread(() -> {
+                        if (!isAdded()) return;
+                        if (!cached.isEmpty()) {
+                            allActivities.clear();
+                            allActivities.addAll(CachedActivityEntity.toList(cached));
+                            recomputeCatalogMaxPrice();
+                            applyFilters();
+                            Toast.makeText(requireContext(), R.string.explore_offline_cache, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(), R.string.explore_load_error, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                });
             }
         });
     }
@@ -367,15 +399,14 @@ public class ExploreFragment extends Fragment {
                 if (!isAdded()) return;
                 UserRtdbDto user = response.body();
                 applyUserPreferences(user);
+                if (user != null) userProfileFileCache.save(user);
             }
 
             @Override
             public void onFailure(@NonNull Call<UserRtdbDto> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
-                userPreferenceKeys.clear();
-                hasUsefulUserPreferences = false;
-                updateProfileButtonPhoto(null);
-                applyFilters();
+                UserRtdbDto cached = userProfileFileCache.load();
+                applyUserPreferences(cached);
             }
         });
     }

@@ -27,6 +27,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.local.db.CachedReservationDao;
+import ar.edu.uadexplorenow.data.local.db.CachedReservationEntity;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
@@ -51,6 +53,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
 
@@ -70,6 +74,10 @@ public class ActivityHistoryFragment extends Fragment {
     RealtimeDatabaseApi realtimeDatabaseApi;
     @Inject
     Gson gson;
+    @Inject
+    CachedReservationDao cachedReservationDao;
+
+    private final ExecutorService cacheExecutor = Executors.newSingleThreadExecutor();
 
     private final List<ReservationItem> allItems = new ArrayList<>();
     private final List<String> destinationValues = new ArrayList<>();
@@ -99,6 +107,9 @@ public class ActivityHistoryFragment extends Fragment {
     private boolean activitiesRequestDone;
     private boolean hasShownPartialError;
     private boolean hasLoadedOnce;
+    private boolean userNetworkFailed;
+    @Nullable
+    private String currentUid;
 
     @Nullable
     @Override
@@ -218,10 +229,11 @@ public class ActivityHistoryFragment extends Fragment {
         hasShownPartialError = false;
         userRequestDone = false;
         activitiesRequestDone = false;
+        userNetworkFailed = false;
 
-        String effectiveUid = SessionStore.getEffectiveUid(requireContext(), currentUser);
+        currentUid = SessionStore.getEffectiveUid(requireContext(), currentUser);
 
-        realtimeDatabaseApi.getUser(effectiveUid).enqueue(new Callback<UserRtdbDto>() {
+        realtimeDatabaseApi.getUser(currentUid).enqueue(new Callback<UserRtdbDto>() {
             @Override
             public void onResponse(@NonNull Call<UserRtdbDto> call, @NonNull Response<UserRtdbDto> response) {
                 if (!isAdded()) return;
@@ -234,6 +246,7 @@ public class ActivityHistoryFragment extends Fragment {
             public void onFailure(@NonNull Call<UserRtdbDto> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 loadedUser = null;
+                userNetworkFailed = true;
                 userRequestDone = true;
                 maybeRenderReservations();
             }
@@ -260,8 +273,53 @@ public class ActivityHistoryFragment extends Fragment {
         });
     }
 
+    private void loadReservationsFromCache(@NonNull String uid) {
+        cacheExecutor.execute(() -> {
+            List<CachedReservationEntity> cached = cachedReservationDao.getAllByUid(uid);
+            android.app.Activity act = getActivity();
+            if (act == null) return;
+            act.runOnUiThread(() -> {
+                if (!isAdded()) return;
+                setLoading(false);
+                if (cached.isEmpty()) {
+                    Toast.makeText(requireContext(), R.string.history_load_error, Toast.LENGTH_LONG).show();
+                    applyFilters();
+                    return;
+                }
+                allItems.clear();
+                allItems.addAll(CachedReservationEntity.toList(cached));
+                setupDestinationSpinner(allItems);
+                applyFilters();
+                showOfflineBanner();
+                Toast.makeText(requireContext(), R.string.history_offline_cache, Toast.LENGTH_SHORT).show();
+            });
+        });
+    }
+
+    private void saveReservationsToCache(@NonNull String uid, @NonNull List<ReservationItem> items) {
+        final List<CachedReservationEntity> entities = CachedReservationEntity.fromList(uid, items);
+        cacheExecutor.execute(() -> {
+            cachedReservationDao.deleteByUid(uid);
+            cachedReservationDao.insertAll(entities);
+        });
+    }
+
+    private void showOfflineBanner() {
+        View view = getView();
+        if (view == null) return;
+        View banner = view.findViewById(R.id.offlineBanner);
+        if (banner != null) {
+            banner.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void maybeRenderReservations() {
         if (!userRequestDone || !activitiesRequestDone || !isAdded()) {
+            return;
+        }
+
+        if (userNetworkFailed && currentUid != null) {
+            loadReservationsFromCache(currentUid);
             return;
         }
 
@@ -270,6 +328,10 @@ public class ActivityHistoryFragment extends Fragment {
         allItems.addAll(ReservationItem.buildList(loadedUser, detailById));
         setupDestinationSpinner(allItems);
         applyFilters();
+
+        if (!allItems.isEmpty() && currentUid != null) {
+            saveReservationsToCache(currentUid, new ArrayList<>(allItems));
+        }
 
         if (loadedUser == null && !hasShownPartialError) {
             hasShownPartialError = true;

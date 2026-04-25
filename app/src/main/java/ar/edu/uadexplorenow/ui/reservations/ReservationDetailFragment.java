@@ -29,6 +29,8 @@ import androidx.navigation.Navigation;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.ReservationRepository;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.local.db.CachedReservationDao;
+import ar.edu.uadexplorenow.data.local.db.CachedReservationEntity;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
@@ -83,6 +85,8 @@ public class ReservationDetailFragment extends Fragment {
     RealtimeDatabaseApi realtimeDatabaseApi;
     @Inject
     Gson gson;
+    @Inject
+    CachedReservationDao cachedReservationDao;
 
     @Nullable
     private String effectiveUid;
@@ -140,7 +144,7 @@ public class ReservationDetailFragment extends Fragment {
             return;
         }
         effectiveUid = SessionStore.getEffectiveUid(requireContext(), currentUser);
-        reservationRepository = new ReservationRepository(realtimeDatabaseApi);
+        reservationRepository = new ReservationRepository(realtimeDatabaseApi, cachedReservationDao);
         pendingMapViewState = savedInstanceState != null
                 ? savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY)
                 : null;
@@ -298,8 +302,31 @@ public class ReservationDetailFragment extends Fragment {
             }
         }
 
-        Toast.makeText(requireContext(), R.string.reservation_detail_missing, Toast.LENGTH_LONG).show();
-        Navigation.findNavController(requireView()).popBackStack();
+        new Thread(() -> {
+            CachedReservationEntity cached = cachedReservationDao.getByReservationId(reservationId);
+            android.app.Activity act = getActivity();
+            if (act == null) return;
+            act.runOnUiThread(() -> {
+                if (!isAdded()) return;
+                if (cached != null) {
+                    loadedReservation = cached.toDomain();
+                    showOfflineBanner();
+                    bindReservation(loadedReservation);
+                } else {
+                    Toast.makeText(requireContext(), R.string.reservation_detail_missing, Toast.LENGTH_LONG).show();
+                    Navigation.findNavController(requireView()).popBackStack();
+                }
+            });
+        }).start();
+    }
+
+    private void showOfflineBanner() {
+        View view = getView();
+        if (view == null) return;
+        View banner = view.findViewById(R.id.offlineBanner);
+        if (banner != null) {
+            banner.setVisibility(View.VISIBLE);
+        }
     }
 
     private void bindReservation(@NonNull ReservationItem reservation) {

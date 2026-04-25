@@ -435,4 +435,18 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center" />
 
+    <TextView
+        android:id="@+id/offlineBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#FFF3E0"
+        android:gravity="center"
+        android:paddingVertical="10dp"
+        android:text="@string/offline_banner"
+        android:textColor="#E65100"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
 </FrameLayout>
