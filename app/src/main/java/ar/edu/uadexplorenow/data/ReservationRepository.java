@@ -200,7 +200,10 @@ public final class ReservationRepository {
                     @Override
                     public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                         if (response.isSuccessful()) {
-                            updateCachedStatus(reservation.reservationId, ReservationStatus.FINISHED);
+                            updateCachedStatusAndFinishedAt(
+                                    reservation.reservationId,
+                                    ReservationStatus.FINISHED,
+                                    now);
                             callback.onSuccess();
                         } else {
                             Log.w(TAG, "No se pudo marcar la reserva como finalizada. HTTP " + response.code());
@@ -212,6 +215,60 @@ public final class ReservationRepository {
                     public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                         Log.e(TAG, "Error de red al finalizar la reserva", t);
                         callback.onError("Error de red al finalizar la reserva.");
+                    }
+                });
+    }
+
+    public void submitReview(
+            @NonNull String uid,
+            @NonNull ReservationItem reservation,
+            double activityRating,
+            double guideRating,
+            @NonNull String reviewComment,
+            @NonNull ActionCallback callback
+    ) {
+        if (!reservation.canReviewNow()) {
+            callback.onError("La reserva ya no esta disponible para calificar.");
+            return;
+        }
+
+        String ratedAt = Instant.now().toString();
+        double userRating = (activityRating + guideRating) / 2d;
+        Map<String, Object> updates = new LinkedHashMap<>();
+        updates.put("activity_rating", activityRating);
+        updates.put("activityRating", activityRating);
+        updates.put("guide_rating", guideRating);
+        updates.put("guideRating", guideRating);
+        updates.put("user_rating", userRating);
+        updates.put("userRating", userRating);
+        updates.put("review_comment", reviewComment);
+        updates.put("reviewComment", reviewComment);
+        updates.put("rated_at", ratedAt);
+        updates.put("ratedAt", ratedAt);
+        updates.put("updated_at", ratedAt);
+
+        realtimeDatabaseApi.patchReservation(uid, reservation.reservationId, updates)
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                        if (!response.isSuccessful()) {
+                            callback.onError("No se pudo guardar la calificacion. HTTP " + response.code());
+                            return;
+                        }
+                        updateCachedReview(
+                                reservation.reservationId,
+                                userRating,
+                                activityRating,
+                                guideRating,
+                                reviewComment,
+                                ratedAt);
+                        callback.onSuccess();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                        Log.e(TAG, "Error de red al guardar la calificacion", t);
+                        callback.onError("Error de red al guardar la calificacion.");
                     }
                 });
     }
@@ -257,6 +314,11 @@ public final class ReservationRepository {
                 detail.imageUrls.isEmpty() ? "" : detail.imageUrls.get(0),
                 detail.meetingPoint,
                 null,
+                null,
+                null,
+                "",
+                "",
+                "",
                 detail.price,
                 detail.price * participants,
                 detail.currency,
@@ -271,6 +333,34 @@ public final class ReservationRepository {
 
     private void updateCachedStatus(@NonNull String reservationId, @NonNull String status) {
         new Thread(() -> cachedReservationDao.updateStatus(reservationId, status)).start();
+    }
+
+    private void updateCachedStatusAndFinishedAt(
+            @NonNull String reservationId,
+            @NonNull String status,
+            @NonNull String finishedAtValue
+    ) {
+        new Thread(() -> cachedReservationDao.updateStatusAndFinishedAt(
+                reservationId,
+                status,
+                finishedAtValue)).start();
+    }
+
+    private void updateCachedReview(
+            @NonNull String reservationId,
+            double userRating,
+            double activityRating,
+            double guideRating,
+            @NonNull String reviewComment,
+            @NonNull String ratedAtValue
+    ) {
+        new Thread(() -> cachedReservationDao.updateReview(
+                reservationId,
+                userRating,
+                activityRating,
+                guideRating,
+                reviewComment,
+                ratedAtValue)).start();
     }
 
     @NonNull
