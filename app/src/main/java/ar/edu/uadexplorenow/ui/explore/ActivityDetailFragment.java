@@ -31,6 +31,7 @@ import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.FavoritesRepository;
 import ar.edu.uadexplorenow.data.ReservationRepository;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.local.db.CachedReservationDao;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
@@ -69,6 +70,8 @@ public class ActivityDetailFragment extends Fragment {
     RealtimeDatabaseApi realtimeDatabaseApi;
     @Inject
     FavoritesRepository favoritesRepository;
+    @Inject
+    CachedReservationDao cachedReservationDao;
 
     public static final String ARG_ACTIVITY_ID = "activity_id";
 
@@ -109,7 +112,7 @@ public class ActivityDetailFragment extends Fragment {
             return;
         }
         effectiveUid = SessionStore.getEffectiveUid(requireContext(), currentUser);
-        reservationRepository = new ReservationRepository(realtimeDatabaseApi);
+        reservationRepository = new ReservationRepository(realtimeDatabaseApi, cachedReservationDao);
 
         String id = null;
         if (getArguments() != null) {

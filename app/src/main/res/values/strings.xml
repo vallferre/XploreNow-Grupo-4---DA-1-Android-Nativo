@@ -241,4 +241,8 @@
     <string name="reservation_detail_cancel_success">La reserva fue cancelada y el cupo se libero correctamente.</string>
     <string name="reservation_detail_finish_success">La actividad fue marcada como finalizada.</string>
     <string name="reservation_detail_action_error">No pudimos actualizar esta reserva. Intenta nuevamente.</string>
+
+    <string name="explore_offline_cache">Sin conexión — mostrando actividades guardadas</string>
+    <string name="history_offline_cache">Sin conexión — mostrando reservas guardadas</string>
+    <string name="offline_banner">⚠ Modo sin conexión — datos guardados localmente</string>
 </resources>
