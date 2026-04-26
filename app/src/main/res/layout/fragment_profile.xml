@@ -463,10 +463,20 @@
             android:visibility="gone" />
 
         <Button
-            android:id="@+id/btnLogout"
+            android:id="@+id/btnBiometric"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginTop="18dp"
+            android:background="@drawable/bg_button_secondary"
+            android:textColor="#1A1A2E"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_button_danger"
             android:backgroundTint="@null"
             android:text="@string/profile_logout"

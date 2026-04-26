@@ -56,8 +56,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricManager.Authenticators;
+import androidx.biometric.BiometricPrompt;
+
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.local.BiometricPrefs;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ReservationItem;
@@ -101,6 +106,7 @@ public class ProfileFragment extends Fragment {
     private ProgressBar progress;
     private Button btnOpenHistory;
     private Button btnSave;
+    private Button btnBiometric;
     private Button btnLogout;
 
     private UserRtdbDto loadedUser;
@@ -180,8 +186,9 @@ public class ProfileFragment extends Fragment {
         tvCompletedCount = view.findViewById(R.id.tvCompletedCount);
         progress = view.findViewById(R.id.progress);
         btnOpenHistory = view.findViewById(R.id.btnOpenHistory);
-        btnSave = view.findViewById(R.id.btnSaveProfile);
-        btnLogout = view.findViewById(R.id.btnLogout);
+        btnSave      = view.findViewById(R.id.btnSaveProfile);
+        btnBiometric = view.findViewById(R.id.btnBiometric);
+        btnLogout    = view.findViewById(R.id.btnLogout);
 
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         btnOpenHistory.setOnClickListener(v -> Navigation.findNavController(view)
@@ -189,6 +196,8 @@ public class ProfileFragment extends Fragment {
         btnSelectProfileImage.setOnClickListener(v -> showPhotoSourceDialog());
         btnSave.setOnClickListener(v -> saveProfile(currentUser));
         btnLogout.setOnClickListener(v -> logout(view));
+
+        setupBiometricButton();
 
         canSaveProfile = false;
         btnSave.setEnabled(false);
@@ -957,6 +966,95 @@ public class ProfileFragment extends Fragment {
             }
         }
         return getString(R.string.profile_email_update_error);
+    }
+
+    // ─── Biometría ────────────────────────────────────────────────────────────
+
+    /** Configura el texto y el click del botón según el estado del hardware y la preferencia. */
+    private void setupBiometricButton() {
+        int status = BiometricManager.from(requireContext())
+                .canAuthenticate(Authenticators.BIOMETRIC_STRONG | Authenticators.DEVICE_CREDENTIAL);
+
+        switch (status) {
+            case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
+                btnBiometric.setEnabled(false);
+                btnBiometric.setText(getString(R.string.biometric_unavailable));
+                return;
+
+            case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+                // Hardware presente pero sin huella/PIN registrado → ofrecer ir a ajustes
+                btnBiometric.setText(getString(R.string.biometric_enroll_first));
+                btnBiometric.setOnClickListener(v -> {
+                    android.content.Intent intent = new android.content.Intent(
+                            android.provider.Settings.ACTION_BIOMETRIC_ENROLL);
+                    startActivity(intent);
+                });
+                return;
+
+            default:
+                // BIOMETRIC_SUCCESS o HW_UNAVAILABLE transitorio → botón normal
+                break;
+        }
+
+        // Texto según preferencia guardada
+        refreshBiometricButtonText();
+
+        btnBiometric.setOnClickListener(v -> {
+            if (BiometricPrefs.isEnabled(requireContext())) {
+                BiometricPrefs.setEnabled(requireContext(), false);
+                refreshBiometricButtonText();
+                Toast.makeText(requireContext(),
+                        getString(R.string.biometric_disabled_ok), Toast.LENGTH_SHORT).show();
+            } else {
+                showBiometricSetupPrompt();
+            }
+        });
+    }
+
+    private void refreshBiometricButtonText() {
+        btnBiometric.setText(BiometricPrefs.isEnabled(requireContext())
+                ? getString(R.string.biometric_disable)
+                : getString(R.string.biometric_enable));
+    }
+
+    /** Muestra el prompt biométrico del sistema para verificar antes de activar. */
+    private void showBiometricSetupPrompt() {
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle(getString(R.string.biometric_setup_title))
+                .setSubtitle(getString(R.string.biometric_setup_subtitle))
+                .setAllowedAuthenticators(
+                        Authenticators.BIOMETRIC_STRONG | Authenticators.DEVICE_CREDENTIAL)
+                .build();
+
+        new BiometricPrompt(this, ContextCompat.getMainExecutor(requireContext()),
+                new BiometricPrompt.AuthenticationCallback() {
+
+                    @Override
+                    public void onAuthenticationSucceeded(
+                            @NonNull BiometricPrompt.AuthenticationResult result) {
+                        if (!isAdded()) return;
+                        BiometricPrefs.setEnabled(requireContext(), true);
+                        // Si antes lo había rechazado en el login, limpiamos ese flag
+                        BiometricPrefs.setDeclined(requireContext(), false);
+                        refreshBiometricButtonText();
+                        Toast.makeText(requireContext(),
+                                getString(R.string.biometric_enabled_ok), Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onAuthenticationFailed() {
+                        // Prompt sigue abierto — el sistema gestiona los reintentos
+                    }
+
+                    @Override
+                    public void onAuthenticationError(int errorCode,
+                                                      @NonNull CharSequence errString) {
+                        if (!isAdded()) return;
+                        // Mostramos el mensaje del sistema para que sea descriptivo
+                        Log.w(TAG, "Biometric setup error " + errorCode + ": " + errString);
+                        Toast.makeText(requireContext(), errString, Toast.LENGTH_LONG).show();
+                    }
+                }).authenticate(info);
     }
 
     private void signOutAndNavigateToLogin() {
