@@ -13,6 +13,7 @@ firebaseFirestore = "26.1.2"
 retrofit = "2.9.0"
 okhttp = "4.12.0"
 hilt = "2.59.2"
+biometric = "1.1.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -29,6 +30,7 @@ retrofitConverterGson = { group = "com.squareup.retrofit2", name = "converter-gs
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

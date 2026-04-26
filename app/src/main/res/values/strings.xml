@@ -182,6 +182,24 @@
     <string name="profile_email_verification_sent">Te enviamos un correo al nuevo email. Por seguridad cerraremos la sesion. Verifica el enlace y luego vuelve a iniciar sesion. Hasta verificarlo, segui ingresando con tu email actual.</string>
     <string name="profile_back">Volver</string>
     <string name="profile_logout">Desconectar</string>
+
+    <!-- Biometría -->
+    <string name="biometric_offer_title">Acceso rápido con biometría</string>
+    <string name="biometric_offer_message">¿Querés usar tu huella digital para entrar más rápido la próxima vez?</string>
+    <string name="biometric_offer_yes">Activar</string>
+    <string name="biometric_offer_no">Ahora no</string>
+    <string name="biometric_enroll_first">Registrá tu huella en Ajustes primero</string>
+    <string name="biometric_enable">Activar autenticación biométrica</string>
+    <string name="biometric_disable">Desactivar autenticación biométrica</string>
+    <string name="biometric_unavailable">Biometría no disponible en este dispositivo</string>
+    <string name="biometric_enabled_ok">Biometría activada. Se usará la próxima vez que abras la app.</string>
+    <string name="biometric_disabled_ok">Biometría desactivada.</string>
+    <string name="biometric_cancelled">Verificación cancelada.</string>
+    <string name="biometric_prompt_title">XploreNow</string>
+    <string name="biometric_prompt_subtitle">Verificá tu identidad para continuar</string>
+    <string name="biometric_setup_title">Activar biometría</string>
+    <string name="biometric_setup_subtitle">Confirmá tu identidad para habilitar el acceso biométrico</string>
+
     <string name="history_title">Mis actividades</string>
     <string name="history_back">Volver</string>
     <string name="history_subtitle">Revisa el historial de tus actividades, filtra por fecha o destino y entra a cada una para ver el detalle completo.</string>
