@@ -40,9 +40,11 @@ import ar.edu.uadexplorenow.data.local.db.CachedActivityEntity;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.model.FavoriteRtdbDto;
+import ar.edu.uadexplorenow.data.model.NewsMapper;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityItem;
+import ar.edu.uadexplorenow.domain.NewsItem;
 import ar.edu.uadexplorenow.ui.auth.LoginFragment;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -105,14 +107,17 @@ public class ExploreFragment extends Fragment {
     };
 
     private final List<ActivityItem> allActivities = new ArrayList<>();
+    private final List<NewsItem> newsItems = new ArrayList<>();
     private final LinkedHashSet<String> userPreferenceKeys = new LinkedHashSet<>();
     private final Map<String, FavoriteRtdbDto> favoriteByActivityId = new LinkedHashMap<>();
     private String effectiveUid = "";
 
     private EditText etSearch;
+    private RecyclerView rvNews;
     private RecyclerView rvFeatured;
     private RecyclerView rvAll;
     private ProgressBar progress;
+    private TextView tvSectionNews;
     private TextView tvSectionFeatured;
     private TextView tvSectionAll;
     private TextView tvEmpty;
@@ -121,6 +126,7 @@ public class ExploreFragment extends Fragment {
     private ImageButton btnProfile;
 
     private final FeaturedActivitiesAdapter featuredAdapter = new FeaturedActivitiesAdapter();
+    private final NewsAdapter newsAdapter = new NewsAdapter();
     private final AllActivitiesAdapter allAdapter = new AllActivitiesAdapter();
 
     private String searchQuery = "";
@@ -158,15 +164,21 @@ public class ExploreFragment extends Fragment {
 
         scrollContent = view.findViewById(R.id.scrollContent);
         etSearch = view.findViewById(R.id.etSearch);
+        rvNews = view.findViewById(R.id.rvNews);
         rvFeatured = view.findViewById(R.id.rvFeatured);
         rvAll = view.findViewById(R.id.rvAll);
         progress = view.findViewById(R.id.progress);
+        tvSectionNews = view.findViewById(R.id.tvSectionNews);
         tvSectionFeatured = view.findViewById(R.id.tvSectionFeatured);
         tvSectionAll = view.findViewById(R.id.tvSectionAll);
         tvEmpty = view.findViewById(R.id.tvEmpty);
         bottomNav = view.findViewById(R.id.bottomNav);
         btnProfile = view.findViewById(R.id.btnProfile);
         ImageButton btnFilter = view.findViewById(R.id.btnFilter);
+
+        rvNews.setLayoutManager(
+                new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        rvNews.setAdapter(newsAdapter);
 
         rvFeatured.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -187,6 +199,7 @@ public class ExploreFragment extends Fragment {
         Consumer<ActivityItem> onFavorite = this::onFavoriteToggle;
         featuredAdapter.setOnFavoriteClick(onFavorite);
         allAdapter.setOnFavoriteClick(onFavorite);
+        newsAdapter.setOnItemClick(this::openNews);
 
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -235,6 +248,7 @@ public class ExploreFragment extends Fragment {
         effectiveUid = SessionStore.getEffectiveUid(
                 requireContext(), FirebaseAuth.getInstance().getCurrentUser());
         loadUserPreferences(effectiveUid);
+        loadNews();
         loadActivities();
     }
 
@@ -326,6 +340,40 @@ public class ExploreFragment extends Fragment {
                 });
             }
         });
+    }
+
+    private void loadNews() {
+        realtimeDatabaseApi.getNews().enqueue(new Callback<JsonElement>() {
+            @Override
+            public void onResponse(@NonNull Call<JsonElement> call, @NonNull Response<JsonElement> response) {
+                if (!isAdded()) return;
+                newsItems.clear();
+                if (response.isSuccessful() && response.body() != null) {
+                    newsItems.addAll(NewsMapper.toNewsItems(response.body(), gson));
+                }
+                newsItems.sort((a, b) -> {
+                    if (a.featured != b.featured) {
+                        return a.featured ? -1 : 1;
+                    }
+                    return a.title.compareToIgnoreCase(b.title);
+                });
+                renderNews();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<JsonElement> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                newsItems.clear();
+                renderNews();
+            }
+        });
+    }
+
+    private void renderNews() {
+        newsAdapter.submit(newsItems);
+        boolean showNews = !newsItems.isEmpty();
+        tvSectionNews.setVisibility(showNews ? View.VISIBLE : View.GONE);
+        rvNews.setVisibility(showNews ? View.VISIBLE : View.GONE);
     }
 
     private void recomputeCatalogMaxPrice() {
@@ -782,6 +830,22 @@ public class ExploreFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private void openNews(@NonNull NewsItem item) {
+        if (getView() == null) return;
+        if (item.hasRelatedActivity()) {
+            Bundle args = new Bundle();
+            args.putString(ActivityDetailFragment.ARG_ACTIVITY_ID, item.relatedActivityId);
+            Navigation.findNavController(requireView()).navigate(
+                    R.id.action_exploreFragment_to_activityDetailFragment, args);
+            return;
+        }
+
+        Bundle args = new Bundle();
+        args.putString(NewsDetailFragment.ARG_NEWS_ID, item.id);
+        Navigation.findNavController(requireView()).navigate(
+                R.id.action_exploreFragment_to_newsDetailFragment, args);
     }
 
     private void navigateToProfile(@NonNull View view) {

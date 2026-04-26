@@ -101,6 +101,28 @@
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
+                android:id="@+id/tvSectionNews"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/news_section_title"
+                android:textColor="@color/explore_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvNews"
+                android:layout_width="match_parent"
+                android:layout_height="242dp"
+                android:layout_marginTop="10dp"
+                android:clipToPadding="false"
+                android:paddingEnd="4dp"
+                android:visibility="gone"
+                tools:itemCount="2"
+                tools:listitem="@layout/item_news_card" />
+
+            <TextView
                 android:id="@+id/tvSectionFeatured"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
