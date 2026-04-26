@@ -9,9 +9,12 @@ import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -57,6 +60,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -96,6 +100,8 @@ public class ReservationDetailFragment extends Fragment {
     private MaterialButton btnCancelReservation;
     @Nullable
     private MaterialButton btnFinishReservation;
+    @Nullable
+    private MaterialButton btnReviewReservation;
     @Nullable
     private MaterialButton btnOpenDirections;
     @Nullable
@@ -160,6 +166,7 @@ public class ReservationDetailFragment extends Fragment {
         progress = view.findViewById(R.id.progress);
         btnCancelReservation = view.findViewById(R.id.btnCancelReservation);
         btnFinishReservation = view.findViewById(R.id.btnFinishReservation);
+        btnReviewReservation = view.findViewById(R.id.btnReviewReservation);
         btnOpenDirections = view.findViewById(R.id.btnOpenDirections);
         meetingPointMapContainer = view.findViewById(R.id.meetingPointMapContainer);
         meetingPointMapView = view.findViewById(R.id.meetingPointMapView);
@@ -168,6 +175,7 @@ public class ReservationDetailFragment extends Fragment {
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         btnCancelReservation.setOnClickListener(v -> promptCancelReservation());
         btnFinishReservation.setOnClickListener(v -> finishReservation());
+        btnReviewReservation.setOnClickListener(v -> openReviewDialog());
         loadReservation(reservationId);
     }
 
@@ -350,6 +358,11 @@ public class ReservationDetailFragment extends Fragment {
         TextView tvCancellationDesc = requireView().findViewById(R.id.tvCancellationDesc);
         TextView tvDescriptionTitle = requireView().findViewById(R.id.tvDescriptionTitle);
         TextView tvDescription = requireView().findViewById(R.id.tvDescription);
+        TextView tvReviewTitle = requireView().findViewById(R.id.tvReviewTitle);
+        View cardReview = requireView().findViewById(R.id.cardReview);
+        TextView tvReviewState = requireView().findViewById(R.id.tvReviewState);
+        TextView tvReviewRatings = requireView().findViewById(R.id.tvReviewRatings);
+        TextView tvReviewComment = requireView().findViewById(R.id.tvReviewComment);
 
         if (!reservation.imageUrl.isEmpty()) {
             Glide.with(this)
@@ -400,8 +413,34 @@ public class ReservationDetailFragment extends Fragment {
             tvDescription.setText(reservation.description);
         }
 
+        bindReviewSection(reservation, tvReviewTitle, cardReview, tvReviewState, tvReviewRatings, tvReviewComment);
         updateActionButtons(reservation);
         contentRoot.setVisibility(View.VISIBLE);
+    }
+
+    private void bindReviewSection(
+            @NonNull ReservationItem reservation,
+            @NonNull TextView tvReviewTitle,
+            @NonNull View cardReview,
+            @NonNull TextView tvReviewState,
+            @NonNull TextView tvReviewRatings,
+            @NonNull TextView tvReviewComment
+    ) {
+        tvReviewTitle.setVisibility(View.VISIBLE);
+        cardReview.setVisibility(View.VISIBLE);
+        tvReviewRatings.setText(reservation.detailedRatingLabel());
+        tvReviewComment.setVisibility(reservation.reviewComment.isEmpty() ? View.GONE : View.VISIBLE);
+        tvReviewComment.setText(reservation.reviewComment);
+
+        if (reservation.hasReview()) {
+            tvReviewState.setText(R.string.reservation_review_done);
+        } else if (reservation.canReviewNow()) {
+            tvReviewState.setText(R.string.reservation_review_available_detail);
+        } else if (reservation.reviewWindowExpired()) {
+            tvReviewState.setText(R.string.reservation_review_expired_detail);
+        } else {
+            tvReviewState.setText(R.string.reservation_review_locked_detail);
+        }
     }
 
     private void bindMeetingSection(
@@ -856,12 +895,14 @@ public class ReservationDetailFragment extends Fragment {
     }
 
     private void updateActionButtons(@NonNull ReservationItem reservation) {
-        if (btnCancelReservation == null || btnFinishReservation == null) return;
+        if (btnCancelReservation == null || btnFinishReservation == null || btnReviewReservation == null) return;
 
         boolean canCancel = reservation.canCancel();
         boolean canFinish = reservation.canFinish();
+        boolean canReview = reservation.canReviewNow();
         btnCancelReservation.setEnabled(canCancel);
         btnFinishReservation.setEnabled(canFinish);
+        btnReviewReservation.setEnabled(canReview);
 
         if (!canCancel) {
             btnCancelReservation.setText(
@@ -879,6 +920,16 @@ public class ReservationDetailFragment extends Fragment {
                             : R.string.reservation_detail_finish);
         } else {
             btnFinishReservation.setText(R.string.reservation_detail_finish);
+        }
+
+        if (reservation.hasReview()) {
+            btnReviewReservation.setText(R.string.reservation_review_done);
+        } else if (canReview) {
+            btnReviewReservation.setText(R.string.reservation_review_action);
+        } else if (reservation.reviewWindowExpired()) {
+            btnReviewReservation.setText(R.string.history_review_expired);
+        } else {
+            btnReviewReservation.setText(R.string.reservation_review_action);
         }
     }
 
@@ -939,12 +990,137 @@ public class ReservationDetailFragment extends Fragment {
         });
     }
 
+    private void openReviewDialog() {
+        if (loadedReservation == null || reservationRepository == null || !loadedReservation.canReviewNow()) {
+            return;
+        }
+
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_review_reservation, null, false);
+        EditText etReviewComment = dialogView.findViewById(R.id.etReviewComment);
+        TextView tvReviewCount = dialogView.findViewById(R.id.tvReviewCount);
+        ImageButton[] activityStars = new ImageButton[] {
+                dialogView.findViewById(R.id.starActivity1),
+                dialogView.findViewById(R.id.starActivity2),
+                dialogView.findViewById(R.id.starActivity3),
+                dialogView.findViewById(R.id.starActivity4),
+                dialogView.findViewById(R.id.starActivity5)
+        };
+        ImageButton[] guideStars = new ImageButton[] {
+                dialogView.findViewById(R.id.starGuide1),
+                dialogView.findViewById(R.id.starGuide2),
+                dialogView.findViewById(R.id.starGuide3),
+                dialogView.findViewById(R.id.starGuide4),
+                dialogView.findViewById(R.id.starGuide5)
+        };
+        final int[] activityRating = {0};
+        final int[] guideRating = {0};
+        setupStarRating(activityStars, activityRating);
+        setupStarRating(guideStars, guideRating);
+        etReviewComment.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                int count = s != null ? s.length() : 0;
+                tvReviewCount.setText(getString(R.string.reservation_review_count_fmt, count));
+            }
+        });
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setView(dialogView)
+                .setNegativeButton(R.string.detail_booking_cancel, null)
+                .setPositiveButton(R.string.reservation_review_save, null)
+                .create();
+        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            if (activityRating[0] < 1 || guideRating[0] < 1) {
+                Toast.makeText(requireContext(), R.string.reservation_review_rating_required, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String reviewComment = etReviewComment.getText().toString().trim();
+            dialog.setCancelable(false);
+            setActionButtonsEnabled(false);
+            reservationRepository.submitReview(
+                    effectiveUid,
+                    loadedReservation,
+                    activityRating[0],
+                    guideRating[0],
+                    reviewComment,
+                    new ReservationRepository.ActionCallback() {
+                        @Override
+                        public void onSuccess() {
+                            if (!isAdded()) return;
+                            dialog.dismiss();
+                            loadedReservation = ReservationItem.fromCache(
+                                    loadedReservation.reservationId,
+                                    loadedReservation.activityId,
+                                    loadedReservation.activityName,
+                                    loadedReservation.destination,
+                                    loadedReservation.guideName,
+                                    loadedReservation.category,
+                                    loadedReservation.durationMinutes,
+                                    loadedReservation.participants,
+                                    loadedReservation.status,
+                                    loadedReservation.scheduledAtValue,
+                                    loadedReservation.selectedDateLabel,
+                                    loadedReservation.selectedTimeLabel,
+                                    loadedReservation.imageUrl,
+                                    loadedReservation.meetingPoint,
+                                    (activityRating[0] + guideRating[0]) / 2d,
+                                    (double) activityRating[0],
+                                    (double) guideRating[0],
+                                    reviewComment,
+                                    loadedReservation.finishedAtValue,
+                                    Instant.now().toString(),
+                                    loadedReservation.pricePerPerson,
+                                    loadedReservation.totalPrice,
+                                    loadedReservation.currency,
+                                    loadedReservation.description,
+                                    loadedReservation.cancellationType,
+                                    loadedReservation.cancellationDescription,
+                                    loadedReservation.cancellationFreeHours);
+                            bindReservation(loadedReservation);
+                            Toast.makeText(requireContext(), R.string.reservation_review_saved, Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            if (!isAdded()) return;
+                            setActionButtonsEnabled(true);
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+                        }
+                    });
+        }));
+        dialog.show();
+    }
+
+    private void setupStarRating(@NonNull ImageButton[] stars, @NonNull int[] selectedValue) {
+        refreshStarRating(stars, selectedValue[0]);
+        for (int i = 0; i < stars.length; i++) {
+            final int ratingValue = i + 1;
+            stars[i].setOnClickListener(v -> {
+                selectedValue[0] = ratingValue;
+                refreshStarRating(stars, selectedValue[0]);
+            });
+        }
+    }
+
+    private void refreshStarRating(@NonNull ImageButton[] stars, int selectedValue) {
+        for (int i = 0; i < stars.length; i++) {
+            stars[i].setImageResource(i < selectedValue
+                    ? R.drawable.ic_star_filled
+                    : R.drawable.ic_star_outline);
+        }
+    }
+
     private void setActionButtonsEnabled(boolean enabled) {
         if (btnCancelReservation != null) {
             btnCancelReservation.setEnabled(enabled && loadedReservation != null && loadedReservation.canCancel());
         }
         if (btnFinishReservation != null) {
             btnFinishReservation.setEnabled(enabled && loadedReservation != null && loadedReservation.canFinish());
+        }
+        if (btnReviewReservation != null) {
+            btnReviewReservation.setEnabled(enabled && loadedReservation != null && loadedReservation.canReviewNow());
         }
     }
 
@@ -960,6 +1136,9 @@ public class ReservationDetailFragment extends Fragment {
         }
         if (btnFinishReservation != null) {
             btnFinishReservation.setEnabled(!loading);
+        }
+        if (btnReviewReservation != null) {
+            btnReviewReservation.setEnabled(!loading);
         }
     }
 

@@ -391,6 +391,61 @@
                     android:textColor="@color/explore_muted"
                     android:textSize="15sp"
                     tools:text="Una experiencia gastronomica guiada por los sabores mas emblematicos de la ciudad." />
+
+                <TextView
+                    android:id="@+id/tvReviewTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="@string/reservation_review_section_title"
+                    android:textColor="@color/explore_title"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardReview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:cardBackgroundColor="@color/detail_info_card_bg"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/tvReviewState"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/explore_title"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            tools:text="Ya calificaste esta actividad." />
+
+                        <TextView
+                            android:id="@+id/tvReviewRatings"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:textColor="@color/explore_muted"
+                            android:textSize="14sp"
+                            tools:text="Actividad 5.0/5 · Guia 4.0/5" />
+
+                        <TextView
+                            android:id="@+id/tvReviewComment"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:textColor="@color/explore_muted"
+                            android:textSize="14sp"
+                            android:visibility="gone"
+                            tools:text="Muy buena experiencia y muy buena explicacion del recorrido." />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
@@ -399,32 +454,62 @@
             android:layout_height="wrap_content"
             android:background="@color/white"
             android:elevation="10dp"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:paddingHorizontal="16dp"
             android:paddingVertical="12dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCancelReservation"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:text="@string/reservation_detail_cancel"
-                android:textColor="@color/filter_primary"
-                app:backgroundTint="@color/white"
-                app:cornerRadius="14dp"
-                app:strokeColor="@color/filter_primary"
-                app:strokeWidth="1dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelReservation"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:minHeight="52dp"
+                    android:maxLines="2"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:text="@string/reservation_detail_cancel"
+                    android:textColor="@color/filter_primary"
+                    app:backgroundTint="@color/white"
+                    app:cornerRadius="14dp"
+                    app:strokeColor="@color/filter_primary"
+                    app:strokeWidth="1dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFinishReservation"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:minHeight="52dp"
+                    android:maxLines="2"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:text="@string/reservation_detail_finish"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/filter_primary"
+                    app:cornerRadius="14dp" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnFinishReservation"
-                android:layout_width="0dp"
+                android:id="@+id/btnReviewReservation"
+                android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="@string/reservation_detail_finish"
+                android:layout_marginTop="10dp"
+                android:minHeight="52dp"
+                android:text="@string/reservation_review_action"
+                android:textAllCaps="false"
                 android:textColor="@color/white"
-                app:backgroundTint="@color/filter_primary"
+                app:backgroundTint="@color/explore_price_green"
                 app:cornerRadius="14dp" />
         </LinearLayout>
     </LinearLayout>

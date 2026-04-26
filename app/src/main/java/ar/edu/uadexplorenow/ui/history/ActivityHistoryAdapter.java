@@ -57,9 +57,19 @@ public class ActivityHistoryAdapter extends RecyclerView.Adapter<ActivityHistory
                         item.destinationLabel()));
         holder.tvGuide.setText(item.guideLabel());
         holder.tvDuration.setText(item.formattedDuration());
-        holder.tvRating.setText(item.ratingLabel());
+        holder.tvRating.setText(item.detailedRatingLabel());
         holder.tvStatus.setText(item.statusLabel());
         bindStatus(holder, item.status);
+        holder.tvComment.setVisibility(item.reviewComment.isEmpty() ? View.GONE : View.VISIBLE);
+        holder.tvComment.setText(item.reviewComment);
+        holder.tvReviewHint.setVisibility(View.GONE);
+        if (!item.hasReview() && item.canReviewNow()) {
+            holder.tvReviewHint.setVisibility(View.VISIBLE);
+            holder.tvReviewHint.setText(R.string.history_review_available);
+        } else if (!item.hasReview() && item.reviewWindowExpired()) {
+            holder.tvReviewHint.setVisibility(View.VISIBLE);
+            holder.tvReviewHint.setText(R.string.history_review_expired);
+        }
 
         String category = item.categoryLabel();
         holder.tvCategory.setVisibility(category.isEmpty() ? View.GONE : View.VISIBLE);
@@ -119,6 +129,8 @@ public class ActivityHistoryAdapter extends RecyclerView.Adapter<ActivityHistory
         final TextView tvCategory;
         final TextView tvDuration;
         final TextView tvRating;
+        final TextView tvComment;
+        final TextView tvReviewHint;
 
         Holder(@NonNull View itemView) {
             super(itemView);
@@ -130,6 +142,8 @@ public class ActivityHistoryAdapter extends RecyclerView.Adapter<ActivityHistory
             tvCategory = itemView.findViewById(R.id.tvCategory);
             tvDuration = itemView.findViewById(R.id.tvDuration);
             tvRating = itemView.findViewById(R.id.tvRating);
+            tvComment = itemView.findViewById(R.id.tvComment);
+            tvReviewHint = itemView.findViewById(R.id.tvReviewHint);
         }
     }
 }
