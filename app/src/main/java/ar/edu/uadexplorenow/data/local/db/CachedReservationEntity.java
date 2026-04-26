@@ -69,6 +69,23 @@ public class CachedReservationEntity {
     @Nullable
     public Double userRating;
 
+    @ColumnInfo(name = "activity_rating")
+    @Nullable
+    public Double activityRating;
+
+    @ColumnInfo(name = "guide_rating")
+    @Nullable
+    public Double guideRating;
+
+    @ColumnInfo(name = "review_comment")
+    public String reviewComment = "";
+
+    @ColumnInfo(name = "finished_at_value")
+    public String finishedAtValue = "";
+
+    @ColumnInfo(name = "rated_at_value")
+    public String ratedAtValue = "";
+
     @ColumnInfo(name = "price_per_person")
     public double pricePerPerson = 0;
 
@@ -94,7 +111,8 @@ public class CachedReservationEntity {
         return ReservationItem.fromCache(
                 reservationId, activityId, activityName, destination, guideName, category,
                 durationMinutes, participants, status, scheduledAtValue, selectedDateLabel,
-                selectedTimeLabel, imageUrl, meetingPoint, userRating, pricePerPerson,
+                selectedTimeLabel, imageUrl, meetingPoint, userRating, activityRating,
+                guideRating, reviewComment, finishedAtValue, ratedAtValue, pricePerPerson,
                 totalPrice, currency, description, cancellationType, cancellationDescription,
                 cancellationFreeHours
         );
@@ -118,6 +136,11 @@ public class CachedReservationEntity {
         e.imageUrl = item.imageUrl;
         e.meetingPoint = item.meetingPoint;
         e.userRating = item.userRating;
+        e.activityRating = item.activityRating;
+        e.guideRating = item.guideRating;
+        e.reviewComment = item.reviewComment;
+        e.finishedAtValue = item.finishedAtValue;
+        e.ratedAtValue = item.ratedAtValue;
         e.pricePerPerson = item.pricePerPerson;
         e.totalPrice = item.totalPrice;
         e.currency = item.currency;

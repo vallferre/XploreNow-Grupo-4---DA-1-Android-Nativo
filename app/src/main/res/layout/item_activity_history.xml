@@ -137,5 +137,36 @@
                 android:textSize="11sp"
                 tools:text="4.8/5" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvReviewHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/filter_primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/cardThumb"
+            app:layout_constraintTop_toBottomOf="@id/chipRow"
+            tools:text="Ya puedes calificar esta actividad" />
+
+        <TextView
+            android:id="@+id/tvComment"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="6dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/explore_muted"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/cardThumb"
+            app:layout_constraintTop_toBottomOf="@id/tvReviewHint"
+            tools:text="Muy buena experiencia, volveria a reservar con esta guia." />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
