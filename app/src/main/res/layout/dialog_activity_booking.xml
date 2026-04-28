@@ -1,139 +1,431 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp">
-
-    <TextView
-        android:id="@+id/tvDialogTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/detail_booking_title"
-        android:textColor="@color/explore_title"
-        android:textSize="20sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/detail_booking_date_label"
-        android:textColor="@color/explore_title"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnBookingDate"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical|start"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        android:text="@string/detail_booking_date_action"
-        android:textAllCaps="false"
-        android:textColor="@color/explore_title"
-        app:backgroundTint="@color/white"
-        app:cornerRadius="14dp"
-        app:rippleColor="@color/filter_primary_light"
-        app:strokeColor="@color/explore_chip_stroke"
-        app:strokeWidth="1dp" />
-
-    <TextView
-        android:id="@+id/tvBookingDateHint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="@color/explore_muted"
-        android:textSize="13sp"
-        tools:text="Solo puedes reservar esta actividad los martes a partir de hoy." />
-
-    <TextView
-        android:id="@+id/tvBookingTimeLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/detail_booking_time_label"
-        android:textColor="@color/explore_title"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <Spinner
-        android:id="@+id/spinnerBookingTime"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/bg_filter_spinner"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/detail_booking_people_label"
-        android:textColor="@color/explore_title"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+    android:fillViewport="true"
+    android:scrollbars="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnParticipantsMinus"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:text="-"
-            android:textSize="20sp"
-            app:cornerRadius="14dp" />
+        android:orientation="vertical"
+        android:padding="20dp">
 
         <TextView
-            android:id="@+id/tvParticipantsCount"
-            android:layout_width="0dp"
+            android:id="@+id/tvDialogTitle"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="14dp"
-            android:layout_weight="1"
-            android:gravity="center"
+            android:text="@string/detail_booking_title"
             android:textColor="@color/explore_title"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            tools:text="2" />
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/detail_booking_date_label"
+            android:textColor="@color/explore_title"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnParticipantsPlus"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:text="+"
-            android:textSize="20sp"
-            app:cornerRadius="14dp" />
+            android:id="@+id/btnBookingDate"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical|start"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/detail_booking_date_action"
+            android:textAllCaps="false"
+            android:textColor="@color/explore_title"
+            android:textSize="14sp"
+            app:backgroundTint="@color/white"
+            app:cornerRadius="14dp"
+            app:rippleColor="@color/filter_primary_light"
+            app:strokeColor="@color/explore_chip_stroke"
+            app:strokeWidth="1dp" />
+
+        <TextView
+            android:id="@+id/tvBookingDateHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/explore_muted"
+            android:textSize="13sp"
+            tools:text="Solo puedes reservar esta actividad los martes a partir de hoy." />
+
+        <TextView
+            android:id="@+id/tvBookingTimeLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/detail_booking_time_label"
+            android:textColor="@color/explore_title"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spinnerBookingTime"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_filter_spinner"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/detail_booking_people_label"
+            android:textColor="@color/explore_title"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnParticipantsMinus"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:text="-"
+                android:textSize="20sp"
+                app:cornerRadius="14dp" />
+
+            <TextView
+                android:id="@+id/tvParticipantsCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="14dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textColor="@color/explore_title"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                tools:text="2" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnParticipantsPlus"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:text="+"
+                android:textSize="20sp"
+                app:cornerRadius="14dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvBookingAvailability"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textColor="@color/filter_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="Quedan 6 cupos para este horario." />
+
+        <TextView
+            android:id="@+id/tvBookingPolicy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="@color/explore_muted"
+            android:textSize="14sp"
+            tools:text="Politica flexible. Cancelacion sin cargo hasta 24 h antes." />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/blockPayment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            app:strokeColor="@color/filter_primary"
+            app:strokeWidth="2dp"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="44dp"
+                        android:background="@color/filter_primary" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvPaymentSectionTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detail_booking_payment_section_title"
+                            android:textColor="@color/filter_primary"
+                            android:textSize="17sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:lineSpacingExtra="2dp"
+                            android:text="@string/detail_booking_payment_visible_hint"
+                            android:textColor="@color/explore_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_payment_summary"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="12dp">
+
+                    <TextView
+                        android:id="@+id/tvBookingTotalHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/explore_title"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        tools:text="Total estimado (2 personas)" />
+
+                    <TextView
+                        android:id="@+id/tvBookingTotalAmount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="@color/explore_price_green"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        tools:text="$ 24.000" />
+                </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/detail_booking_payer_name_label"
+                android:textColor="@color/explore_title"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etPayerFullName"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="@string/detail_booking_payer_name_hint"
+                android:inputType="textPersonName|textCapWords"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/explore_title"
+                android:textColorHint="@color/explore_muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/detail_booking_payer_email_label"
+                android:textColor="@color/explore_title"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etPayerEmail"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="@string/detail_booking_payer_email_hint"
+                android:inputType="textEmailAddress"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/explore_title"
+                android:textColorHint="@color/explore_muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/detail_booking_payer_phone_label"
+                android:textColor="@color/explore_title"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etPayerPhone"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="@string/detail_booking_payer_phone_hint"
+                android:inputType="phone"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/explore_title"
+                android:textColorHint="@color/explore_muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/detail_booking_payer_document_label"
+                android:textColor="@color/explore_title"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etPayerDocument"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="@string/detail_booking_payer_document_hint"
+                android:inputType="textCapCharacters"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/explore_title"
+                android:textColorHint="@color/explore_muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/detail_booking_card_section_title"
+                android:textColor="@color/explore_title"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/detail_booking_card_number_label"
+                android:textColor="@color/explore_title"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etCardNumber"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="@string/detail_booking_card_number_hint"
+                android:inputType="number"
+                android:maxLength="19"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/explore_title"
+                android:textColorHint="@color/explore_muted"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/detail_booking_card_expiry_label"
+                        android:textColor="@color/explore_title"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etCardExpiry"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input"
+                        android:hint="@string/detail_booking_card_expiry_hint"
+                        android:inputType="text|textNoSuggestions"
+                        android:maxLength="5"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:textColor="@color/explore_title"
+                        android:textColorHint="@color/explore_muted"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <Space
+                    android:layout_width="12dp"
+                    android:layout_height="wrap_content" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/detail_booking_card_cvv_label"
+                        android:textColor="@color/explore_title"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etCardCvv"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input"
+                        android:hint="@string/detail_booking_card_cvv_hint"
+                        android:inputType="numberPassword"
+                        android:maxLength="4"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:textColor="@color/explore_title"
+                        android:textColorHint="@color/explore_muted"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvBookingAvailability"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textColor="@color/filter_primary"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        tools:text="Quedan 6 cupos para este horario." />
-
-    <TextView
-        android:id="@+id/tvBookingPolicy"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:textColor="@color/explore_muted"
-        android:textSize="14sp"
-        tools:text="Politica flexible. Cancelacion sin cargo hasta 24 h antes." />
-
-</LinearLayout>
+</ScrollView>
