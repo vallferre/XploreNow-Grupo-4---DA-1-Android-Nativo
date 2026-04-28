@@ -35,6 +35,7 @@
         android:insetBottom="0dp"
         android:text="@string/detail_booking_date_action"
         android:textAllCaps="false"
+        android:textColor="@color/explore_title"
         app:backgroundTint="@color/white"
         app:cornerRadius="14dp"
         app:rippleColor="@color/filter_primary_light"
