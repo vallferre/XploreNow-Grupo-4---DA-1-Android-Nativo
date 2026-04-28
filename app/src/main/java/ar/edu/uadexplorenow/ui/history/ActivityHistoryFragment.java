@@ -358,8 +358,8 @@ public class ActivityHistoryFragment extends Fragment {
         destinationValues.addAll(values);
 
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(
-                requireContext(), android.R.layout.simple_spinner_item, labels);
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                requireContext(), R.layout.item_history_spinner, labels);
+        spinnerAdapter.setDropDownViewResource(R.layout.item_history_spinner_dropdown);
         spinnerDestination.setAdapter(spinnerAdapter);
 
         int selected = 0;

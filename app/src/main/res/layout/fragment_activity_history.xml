@@ -93,51 +93,52 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="18dp"
+            android:orientation="vertical">
 
             <Spinner
                 android:id="@+id/spinnerDestination"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:layout_weight="1"
                 android:background="@drawable/bg_filter_spinner"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp" />
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDateRange"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical|start"
+                android:minHeight="48dp"
+                android:maxLines="2"
+                android:paddingVertical="10dp"
                 android:text="@string/history_filter_date_any"
                 android:textAllCaps="false"
+                android:textColor="@color/explore_title"
                 app:backgroundTint="@color/white"
                 app:cornerRadius="14dp"
                 app:strokeColor="@color/explore_chip_stroke"
                 app:strokeWidth="1dp" />
-        </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnClearFilters"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_gravity="end"
-            android:layout_marginTop="10dp"
-            android:text="@string/history_clear_filters"
-            android:textAllCaps="false"
-            app:backgroundTint="@color/explore_search_bg"
-            app:cornerRadius="14dp"
-            app:strokeColor="@color/explore_chip_stroke"
-            app:strokeWidth="1dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnClearFilters"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="6dp"
+                android:minHeight="48dp"
+                android:text="@string/history_clear_filters"
+                android:textAllCaps="false"
+                android:textColor="@color/filter_primary" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvResults"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="14dp"
             android:textColor="@color/explore_muted"
             android:textSize="13sp"
             tools:text="Mostrando 6 de 10 actividades" />

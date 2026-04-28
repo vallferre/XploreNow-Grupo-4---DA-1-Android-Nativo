@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -930,6 +931,57 @@ public class ReservationDetailFragment extends Fragment {
             btnReviewReservation.setText(R.string.history_review_expired);
         } else {
             btnReviewReservation.setText(R.string.reservation_review_action);
+        }
+
+        String normalizedStatus = ReservationStatus.normalize(reservation.status);
+        boolean cancelled = ReservationStatus.CANCELLED.equals(normalizedStatus);
+        boolean finished = ReservationStatus.FINISHED.equals(normalizedStatus);
+        LinearLayout.LayoutParams cancelLp =
+                (LinearLayout.LayoutParams) btnCancelReservation.getLayoutParams();
+        LinearLayout.LayoutParams finishLp =
+                (LinearLayout.LayoutParams) btnFinishReservation.getLayoutParams();
+        int gap = dpToPx(8);
+        if (cancelled) {
+            btnFinishReservation.setVisibility(View.GONE);
+            btnReviewReservation.setVisibility(View.GONE);
+
+            btnCancelReservation.setVisibility(View.VISIBLE);
+            cancelLp.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            cancelLp.weight = 0f;
+            cancelLp.setMargins(0, cancelLp.topMargin, 0, cancelLp.bottomMargin);
+            btnCancelReservation.setLayoutParams(cancelLp);
+
+            finishLp.width = 0;
+            finishLp.weight = 1f;
+            finishLp.setMargins(gap, finishLp.topMargin, 0, finishLp.bottomMargin);
+            btnFinishReservation.setLayoutParams(finishLp);
+        } else if (finished) {
+            btnCancelReservation.setVisibility(View.GONE);
+            btnFinishReservation.setVisibility(View.VISIBLE);
+            btnReviewReservation.setVisibility(View.VISIBLE);
+
+            finishLp.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            finishLp.weight = 0f;
+            finishLp.setMargins(0, finishLp.topMargin, 0, finishLp.bottomMargin);
+            btnFinishReservation.setLayoutParams(finishLp);
+
+            cancelLp.width = 0;
+            cancelLp.weight = 1f;
+            cancelLp.setMargins(0, cancelLp.topMargin, gap, cancelLp.bottomMargin);
+            btnCancelReservation.setLayoutParams(cancelLp);
+        } else {
+            btnCancelReservation.setVisibility(View.VISIBLE);
+            btnFinishReservation.setVisibility(View.VISIBLE);
+            btnReviewReservation.setVisibility(View.VISIBLE);
+
+            cancelLp.width = 0;
+            cancelLp.weight = 1f;
+            cancelLp.setMargins(0, cancelLp.topMargin, gap, cancelLp.bottomMargin);
+            finishLp.width = 0;
+            finishLp.weight = 1f;
+            finishLp.setMargins(gap, finishLp.topMargin, 0, finishLp.bottomMargin);
+            btnCancelReservation.setLayoutParams(cancelLp);
+            btnFinishReservation.setLayoutParams(finishLp);
         }
     }
 
