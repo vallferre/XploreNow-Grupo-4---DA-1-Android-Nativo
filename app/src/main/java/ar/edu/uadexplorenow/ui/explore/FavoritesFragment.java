@@ -20,12 +20,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.FavoritesRepository;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.local.db.CachedActivityDao;
+import ar.edu.uadexplorenow.data.local.db.CachedActivityEntity;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbMapper;
 import ar.edu.uadexplorenow.data.model.FavoriteRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.domain.FavoriteListRow;
 import ar.edu.uadexplorenow.domain.FavoriteListRow.SpotsNovelty;
+
+import android.os.Handler;
+import android.os.Looper;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -54,6 +59,8 @@ public class FavoritesFragment extends Fragment {
     Gson gson;
     @Inject
     FavoritesRepository favoritesRepository;
+    @Inject
+    CachedActivityDao cachedActivityDao;
 
     private final FavoritesAdapter adapter = new FavoritesAdapter();
     private final Map<String, ActivityItem> activityById = new HashMap<>();
@@ -161,12 +168,25 @@ public class FavoritesFragment extends Fragment {
                 @Override
                 public void onFailure(@NonNull Call<JsonElement> call, @NonNull Throwable t) {
                     if (!isAdded()) return;
-                    progress.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), R.string.explore_load_error, Toast.LENGTH_LONG).show();
-                    renderFavorites(favMap);
+                    loadActivitiesFromCache(favMap);
                 }
             });
         });
+    }
+
+    private void loadActivitiesFromCache(@NonNull Map<String, FavoriteRtdbDto> favMap) {
+        new Thread(() -> {
+            List<CachedActivityEntity> cached = cachedActivityDao.getAll();
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (!isAdded()) return;
+                progress.setVisibility(View.GONE);
+                activityById.clear();
+                for (ActivityItem a : CachedActivityEntity.toList(cached)) {
+                    activityById.put(a.id, a);
+                }
+                renderFavorites(favMap);
+            });
+        }).start();
     }
 
     private void renderFavorites(@NonNull Map<String, FavoriteRtdbDto> favMap) {
