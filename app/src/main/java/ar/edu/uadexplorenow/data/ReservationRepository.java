@@ -414,6 +414,7 @@ public final class ReservationRepository {
             policy.put("free_cancel_hours", detail.cancellationPolicy.freeCancelHours);
             payload.put("cancellation_policy", policy);
         }
+
         return payload;
     }
 }

@@ -6,11 +6,15 @@ import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -51,6 +55,7 @@ import java.util.Locale;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
@@ -477,6 +482,8 @@ public class ActivityDetailFragment extends Fragment {
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_activity_booking, null, false);
         MaterialButton btnBookingDate = dialogView.findViewById(R.id.btnBookingDate);
+        btnBookingDate.setTextColor(ColorStateList.valueOf(
+                ContextCompat.getColor(requireContext(), R.color.explore_title)));
         TextView tvBookingDateHint = dialogView.findViewById(R.id.tvBookingDateHint);
         TextView tvBookingTimeLabel = dialogView.findViewById(R.id.tvBookingTimeLabel);
         Spinner spinnerTime = dialogView.findViewById(R.id.spinnerBookingTime);
@@ -485,6 +492,20 @@ public class ActivityDetailFragment extends Fragment {
         TextView tvParticipantsCount = dialogView.findViewById(R.id.tvParticipantsCount);
         TextView tvAvailability = dialogView.findViewById(R.id.tvBookingAvailability);
         TextView tvPolicy = dialogView.findViewById(R.id.tvBookingPolicy);
+        View blockPayment = dialogView.findViewById(R.id.blockPayment);
+        TextView tvBookingTotalHint = dialogView.findViewById(R.id.tvBookingTotalHint);
+        TextView tvBookingTotalAmount = dialogView.findViewById(R.id.tvBookingTotalAmount);
+        EditText etPayerFullName = dialogView.findViewById(R.id.etPayerFullName);
+        EditText etPayerEmail = dialogView.findViewById(R.id.etPayerEmail);
+        EditText etPayerPhone = dialogView.findViewById(R.id.etPayerPhone);
+        EditText etPayerDocument = dialogView.findViewById(R.id.etPayerDocument);
+        EditText etCardNumber = dialogView.findViewById(R.id.etCardNumber);
+        EditText etCardExpiry = dialogView.findViewById(R.id.etCardExpiry);
+        EditText etCardCvv = dialogView.findViewById(R.id.etCardCvv);
+        attachCardExpiryMmYyFormatter(etCardExpiry);
+
+        final boolean requiresPayment = detail.price > 0;
+        blockPayment.setVisibility(requiresPayment ? View.VISIBLE : View.GONE);
 
         int[] participants = {1};
         LocalDate[] selectedDate = {initialDate};
@@ -511,6 +532,16 @@ public class ActivityDetailFragment extends Fragment {
                     Math.max(0, available - participants[0])));
             btnMinus.setEnabled(participants[0] > 1);
             btnPlus.setEnabled(participants[0] < available);
+            if (requiresPayment) {
+                String personWord = participants[0] == 1
+                        ? getString(R.string.detail_booking_person_singular)
+                        : getString(R.string.detail_booking_person_plural);
+                tvBookingTotalHint.setText(getString(
+                        R.string.detail_booking_total_hint_fmt,
+                        participants[0],
+                        personWord));
+                tvBookingTotalAmount.setText(formatBookingTotal(detail, participants[0]));
+            }
         };
 
         if (availableTimes.isEmpty()) {
@@ -621,7 +652,12 @@ public class ActivityDetailFragment extends Fragment {
                     return;
                 }
 
-                setDialogEnabled(dialog, false);
+                if (!validatePaidCheckoutFieldsOrToast(requiresPayment, etPayerFullName, etPayerEmail, etPayerPhone,
+                        etPayerDocument, etCardNumber, etCardExpiry, etCardCvv)) {
+                    return;
+                }
+
+                setBookingDialogBusy(dialog, dialogView, false);
                 reservationRepository.createReservation(
                         effectiveUid,
                         detail.id,
@@ -641,13 +677,163 @@ public class ActivityDetailFragment extends Fragment {
                             public void onError(@NonNull String message) {
                                 if (!isAdded()) return;
                                 Log.w(TAG, "Fallo la reserva para activityId=" + detail.id + ": " + message);
-                                setDialogEnabled(dialog, true);
+                                setBookingDialogBusy(dialog, dialogView, true);
                                 Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
                             }
                         });
             });
         });
         dialog.show();
+    }
+
+    @NonNull
+    private String formatBookingTotal(@NonNull ActivityDetail d, int participants) {
+        int p = Math.max(1, participants);
+        double total = d.price * p;
+        String currency = d.currency != null ? d.currency.trim() : "";
+        if (currency.isEmpty() || "ARS".equalsIgnoreCase(currency) || "$".equals(currency)) {
+            return String.format(Locale.getDefault(), "$%.0f", total);
+        }
+        return String.format(Locale.getDefault(), "%.0f %s", total, currency);
+    }
+
+    /** Solo validación de UI; los datos de pago no se persisten. */
+    private boolean validatePaidCheckoutFieldsOrToast(
+            boolean required,
+            @NonNull EditText etName,
+            @NonNull EditText etEmail,
+            @NonNull EditText etPhone,
+            @NonNull EditText etDocument,
+            @NonNull EditText etCardNumber,
+            @NonNull EditText etExpiry,
+            @NonNull EditText etCvv
+    ) {
+        if (!required) {
+            return true;
+        }
+        String name = etName.getText().toString().trim();
+        if (name.length() < 3) {
+            Toast.makeText(requireContext(), R.string.detail_booking_payment_name_invalid, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        String email = etEmail.getText().toString().trim();
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            Toast.makeText(requireContext(), R.string.detail_booking_payment_email_invalid, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        String phoneDigits = digitsOnly(etPhone.getText().toString());
+        if (phoneDigits.length() < 8) {
+            Toast.makeText(requireContext(), R.string.detail_booking_payment_phone_invalid, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        String document = etDocument.getText().toString().trim().replace(".", "").replace(" ", "");
+        if (document.length() < 7) {
+            Toast.makeText(requireContext(), R.string.detail_booking_payment_document_invalid, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        String cardDigits = digitsOnly(etCardNumber.getText().toString());
+        if (cardDigits.length() < 13 || cardDigits.length() > 19) {
+            Toast.makeText(requireContext(), R.string.detail_booking_payment_card_invalid, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (!isCardExpiryValid(etExpiry.getText().toString())) {
+            Toast.makeText(requireContext(), R.string.detail_booking_payment_expiry_invalid, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        String cvvDigits = digitsOnly(etCvv.getText().toString());
+        if (cvvDigits.length() < 3 || cvvDigits.length() > 4) {
+            Toast.makeText(requireContext(), R.string.detail_booking_payment_cvv_invalid, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Formato MM/AA: inserta la barra tras el mes y acepta como máximo 4 dígitos (5 caracteres con /).
+     */
+    private static void attachCardExpiryMmYyFormatter(@NonNull EditText et) {
+        et.addTextChangedListener(new TextWatcher() {
+            boolean selfChange;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (selfChange) {
+                    return;
+                }
+                String digits = digitsOnly(s.toString());
+                if (digits.length() > 4) {
+                    digits = digits.substring(0, 4);
+                }
+                StringBuilder out = new StringBuilder();
+                for (int i = 0; i < digits.length(); i++) {
+                    if (i == 2) {
+                        out.append('/');
+                    }
+                    out.append(digits.charAt(i));
+                }
+                String formatted = out.toString();
+                if (!formatted.contentEquals(s)) {
+                    selfChange = true;
+                    s.replace(0, s.length(), formatted);
+                    selfChange = false;
+                }
+            }
+        });
+    }
+
+    private static boolean isCardExpiryValid(@NonNull String raw) {
+        String t = raw.trim();
+        if (!t.matches("^(0[1-9]|1[0-2])/([0-9]{2})$")) {
+            return false;
+        }
+        int mm = Integer.parseInt(t.substring(0, 2));
+        int yy = Integer.parseInt(t.substring(3, 5));
+        YearMonth exp = YearMonth.of(2000 + yy, mm);
+        return !exp.isBefore(YearMonth.now());
+    }
+
+    @NonNull
+    private static String digitsOnly(@Nullable String s) {
+        if (s == null) {
+            return "";
+        }
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c >= '0' && c <= '9') {
+                b.append(c);
+            }
+        }
+        return b.toString();
+    }
+
+    private void setBookingDialogBusy(@NonNull AlertDialog dialog, @NonNull View dialogView, boolean interactive) {
+        setDialogEnabled(dialog, interactive);
+        int[] ids = {
+                R.id.btnBookingDate,
+                R.id.btnParticipantsMinus,
+                R.id.btnParticipantsPlus,
+                R.id.spinnerBookingTime,
+                R.id.etPayerFullName,
+                R.id.etPayerEmail,
+                R.id.etPayerPhone,
+                R.id.etPayerDocument,
+                R.id.etCardNumber,
+                R.id.etCardExpiry,
+                R.id.etCardCvv
+        };
+        for (int id : ids) {
+            View v = dialogView.findViewById(id);
+            if (v != null) {
+                v.setEnabled(interactive);
+            }
+        }
     }
 
     private boolean hasBookableDates(@NonNull ActivityDetail detail) {
