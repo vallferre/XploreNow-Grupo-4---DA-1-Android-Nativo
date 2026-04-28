@@ -137,6 +137,7 @@ public class ActivityRtdbDto {
         long spots = availableSpots != null ? availableSpots : 0L;
         double rat = rating != null ? rating : 0;
         boolean feat = Boolean.TRUE.equals(isFeatured);
+        long revCount = reviewCount != null ? reviewCount : 0L;
         return new ActivityItem(
                 rid,
                 name != null ? name : "",
@@ -147,6 +148,7 @@ public class ActivityRtdbDto {
                 currency != null ? currency : "",
                 spots,
                 rat,
+                revCount,
                 feat,
                 coverImageUrl != null ? coverImageUrl : "",
                 day != null ? day : ""

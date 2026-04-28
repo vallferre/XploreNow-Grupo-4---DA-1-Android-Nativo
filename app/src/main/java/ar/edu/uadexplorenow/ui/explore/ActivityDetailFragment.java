@@ -18,6 +18,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -97,6 +98,11 @@ public class ActivityDetailFragment extends Fragment {
     @Nullable
     private ReservationRepository reservationRepository;
 
+    /** Para refrescar rating/reseñas al volver desde otras pantallas. */
+    @Nullable
+    private TextView tvSubtitleRef;
+    private String loadedActivityId = "";
+
     @Nullable
     @Override
     public View onCreateView(
@@ -137,6 +143,7 @@ public class ActivityDetailFragment extends Fragment {
         TextView tvHeroCategory = view.findViewById(R.id.tvHeroCategory);
         TextView tvTitle = view.findViewById(R.id.tvTitle);
         TextView tvSubtitle = view.findViewById(R.id.tvSubtitle);
+        tvSubtitleRef = tvSubtitle;
         TextView tvDuration = view.findViewById(R.id.tvDuration);
         TextView tvLanguage = view.findViewById(R.id.tvLanguage);
         TextView tvCupos = view.findViewById(R.id.tvCupos);
@@ -192,6 +199,7 @@ public class ActivityDetailFragment extends Fragment {
                     return;
                 }
                 loadedDetail = detail;
+                loadedActivityId = activityId;
                 bindDetail(
                         detail, photoPager, dotsContainer, photoAdapter,
                         tvHeroCategory, tvTitle, tvSubtitle, tvWhenLabel, tvActivityWhen,
@@ -212,6 +220,29 @@ public class ActivityDetailFragment extends Fragment {
                 Toast.makeText(requireContext(), R.string.detail_load_error, Toast.LENGTH_LONG).show();
                 Navigation.findNavController(view).popBackStack();
             }
+        });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (loadedActivityId.isEmpty() || tvSubtitleRef == null) {
+            return;
+        }
+        realtimeDatabaseApi.getActivity(loadedActivityId).enqueue(new Callback<ActivityRtdbDto>() {
+            @Override
+            public void onResponse(@NonNull Call<ActivityRtdbDto> call, @NonNull Response<ActivityRtdbDto> response) {
+                if (!isAdded() || tvSubtitleRef == null) return;
+                ActivityRtdbDto body = response.body();
+                if (!response.isSuccessful() || body == null) return;
+                ActivityDetail detail = ActivityDetail.fromRtdbDto(body, loadedActivityId);
+                if (detail == null) return;
+                loadedDetail = detail;
+                bindSubtitleLine(tvSubtitleRef, detail);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ActivityRtdbDto> call, @NonNull Throwable t) {}
         });
     }
 
@@ -305,10 +336,7 @@ public class ActivityDetailFragment extends Fragment {
 
         tvHeroCategory.setText(detail.categoryLabel());
         tvTitle.setText(detail.name);
-        tvSubtitle.setText(getString(R.string.detail_subtitle_fmt,
-                detail.destination.isEmpty() ? "—" : detail.destination,
-                detail.rating,
-                detail.reviewCount));
+        bindSubtitleLine(tvSubtitle, detail);
 
         String whenLine = detail.formattedWhenLine();
         if (whenLine.isEmpty()) {
@@ -365,6 +393,18 @@ public class ActivityDetailFragment extends Fragment {
         bindCancellation(detail, tvCancellationTitle, cardCancellation, tvCancellationType, tvCancellationDesc);
         tvBottomPrice.setText(detail.priceLarge());
         updateReserveButton(detail, reserveButton);
+    }
+
+    private void bindSubtitleLine(@NonNull TextView tvSubtitle, @NonNull ActivityDetail detail) {
+        String dest = detail.destination.isEmpty() ? "—" : detail.destination;
+        if (detail.reviewCount <= 0) {
+            tvSubtitle.setText(getString(R.string.detail_subtitle_no_reviews_yet, dest));
+        } else {
+            tvSubtitle.setText(getString(R.string.detail_subtitle_fmt,
+                    dest,
+                    detail.rating,
+                    detail.reviewCount));
+        }
     }
 
     private void openMeetingPoint(@NonNull ActivityDetail detail) {
@@ -502,9 +542,45 @@ public class ActivityDetailFragment extends Fragment {
         EditText etCardNumber = dialogView.findViewById(R.id.etCardNumber);
         EditText etCardExpiry = dialogView.findViewById(R.id.etCardExpiry);
         EditText etCardCvv = dialogView.findViewById(R.id.etCardCvv);
+        ScrollView bookingScroll = dialogView.findViewById(R.id.bookingDialogScroll);
+        TextView tvErrPayerFullName = dialogView.findViewById(R.id.tvErrPayerFullName);
+        TextView tvErrPayerEmail = dialogView.findViewById(R.id.tvErrPayerEmail);
+        TextView tvErrPayerPhone = dialogView.findViewById(R.id.tvErrPayerPhone);
+        TextView tvErrPayerDocument = dialogView.findViewById(R.id.tvErrPayerDocument);
+        TextView tvErrCardNumber = dialogView.findViewById(R.id.tvErrCardNumber);
+        TextView tvErrCardExpiry = dialogView.findViewById(R.id.tvErrCardExpiry);
+        TextView tvErrCardCvv = dialogView.findViewById(R.id.tvErrCardCvv);
         attachCardExpiryMmYyFormatter(etCardExpiry);
 
         final boolean requiresPayment = detail.price > 0;
+
+        BookingPaymentRefs paymentRefs = new BookingPaymentRefs(
+                bookingScroll,
+                etPayerFullName, etPayerEmail, etPayerPhone, etPayerDocument,
+                etCardNumber, etCardExpiry, etCardCvv,
+                tvErrPayerFullName, tvErrPayerEmail, tvErrPayerPhone, tvErrPayerDocument,
+                tvErrCardNumber, tvErrCardExpiry, tvErrCardCvv);
+        Runnable syncPaymentRealtime = () ->
+                applyBookingPaymentInlineStates(paymentRefs, requiresPayment, false);
+
+        EditText[] paymentEditTexts = paymentRefs.paymentFields();
+        TextWatcher realtimeWatcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                syncPaymentRealtime.run();
+            }
+        };
+        if (requiresPayment) {
+            for (EditText et : paymentEditTexts) {
+                et.addTextChangedListener(realtimeWatcher);
+            }
+        }
         blockPayment.setVisibility(requiresPayment ? View.VISIBLE : View.GONE);
 
         int[] participants = {1};
@@ -652,8 +728,8 @@ public class ActivityDetailFragment extends Fragment {
                     return;
                 }
 
-                if (!validatePaidCheckoutFieldsOrToast(requiresPayment, etPayerFullName, etPayerEmail, etPayerPhone,
-                        etPayerDocument, etCardNumber, etCardExpiry, etCardCvv)) {
+                if (!applyBookingPaymentInlineStates(paymentRefs, requiresPayment, true)) {
+                    bookingScroll.post(() -> focusFirstVisibleBookingPaymentIssue(paymentRefs));
                     return;
                 }
 
@@ -697,55 +773,249 @@ public class ActivityDetailFragment extends Fragment {
         return String.format(Locale.getDefault(), "%.0f %s", total, currency);
     }
 
-    /** Solo validación de UI; los datos de pago no se persisten. */
-    private boolean validatePaidCheckoutFieldsOrToast(
+    /**
+     * Referencias a campos de pago del diálogo de reserva (validación en línea).
+     */
+    private static final class BookingPaymentRefs {
+        @NonNull final ScrollView scrollView;
+        @NonNull final EditText etName;
+        @NonNull final EditText etEmail;
+        @NonNull final EditText etPhone;
+        @NonNull final EditText etDocument;
+        @NonNull final EditText etCardNumber;
+        @NonNull final EditText etExpiry;
+        @NonNull final EditText etCvv;
+        @NonNull final TextView tvErrName;
+        @NonNull final TextView tvErrEmail;
+        @NonNull final TextView tvErrPhone;
+        @NonNull final TextView tvErrDocument;
+        @NonNull final TextView tvErrCardNumber;
+        @NonNull final TextView tvErrExpiry;
+        @NonNull final TextView tvErrCvv;
+
+        BookingPaymentRefs(
+                @NonNull ScrollView scrollView,
+                @NonNull EditText etName,
+                @NonNull EditText etEmail,
+                @NonNull EditText etPhone,
+                @NonNull EditText etDocument,
+                @NonNull EditText etCardNumber,
+                @NonNull EditText etExpiry,
+                @NonNull EditText etCvv,
+                @NonNull TextView tvErrName,
+                @NonNull TextView tvErrEmail,
+                @NonNull TextView tvErrPhone,
+                @NonNull TextView tvErrDocument,
+                @NonNull TextView tvErrCardNumber,
+                @NonNull TextView tvErrExpiry,
+                @NonNull TextView tvErrCvv
+        ) {
+            this.scrollView = scrollView;
+            this.etName = etName;
+            this.etEmail = etEmail;
+            this.etPhone = etPhone;
+            this.etDocument = etDocument;
+            this.etCardNumber = etCardNumber;
+            this.etExpiry = etExpiry;
+            this.etCvv = etCvv;
+            this.tvErrName = tvErrName;
+            this.tvErrEmail = tvErrEmail;
+            this.tvErrPhone = tvErrPhone;
+            this.tvErrDocument = tvErrDocument;
+            this.tvErrCardNumber = tvErrCardNumber;
+            this.tvErrExpiry = tvErrExpiry;
+            this.tvErrCvv = tvErrCvv;
+        }
+
+        @NonNull
+        EditText[] paymentFields() {
+            return new EditText[]{etName, etEmail, etPhone, etDocument, etCardNumber, etExpiry, etCvv};
+        }
+    }
+
+    private static void setBookingFieldError(@NonNull TextView label, boolean showError, @NonNull CharSequence message) {
+        if (!showError) {
+            label.setVisibility(View.GONE);
+            label.setText("");
+        } else {
+            label.setVisibility(View.VISIBLE);
+            label.setText(message);
+        }
+    }
+
+    private static void clearAllBookingPaymentErrors(@NonNull BookingPaymentRefs r) {
+        setBookingFieldError(r.tvErrName, false, "");
+        setBookingFieldError(r.tvErrEmail, false, "");
+        setBookingFieldError(r.tvErrPhone, false, "");
+        setBookingFieldError(r.tvErrDocument, false, "");
+        setBookingFieldError(r.tvErrCardNumber, false, "");
+        setBookingFieldError(r.tvErrExpiry, false, "");
+        setBookingFieldError(r.tvErrCvv, false, "");
+    }
+
+    /**
+     * Valida datos de pago y muestra mensajes bajo cada campo.
+     *
+     * @param strictEmpty si es true, los campos vacíos se marcan como error (al confirmar).
+     */
+    private boolean applyBookingPaymentInlineStates(
+            @NonNull BookingPaymentRefs r,
             boolean required,
-            @NonNull EditText etName,
-            @NonNull EditText etEmail,
-            @NonNull EditText etPhone,
-            @NonNull EditText etDocument,
-            @NonNull EditText etCardNumber,
-            @NonNull EditText etExpiry,
-            @NonNull EditText etCvv
+            boolean strictEmpty
     ) {
         if (!required) {
+            clearAllBookingPaymentErrors(r);
             return true;
         }
-        String name = etName.getText().toString().trim();
-        if (name.length() < 3) {
-            Toast.makeText(requireContext(), R.string.detail_booking_payment_name_invalid, Toast.LENGTH_SHORT).show();
-            return false;
+        boolean allOk = true;
+
+        String name = r.etName.getText().toString().trim();
+        if (name.isEmpty()) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrName, true, getString(R.string.detail_booking_payment_name_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrName, false, "");
+            }
+        } else if (name.length() < 3) {
+            setBookingFieldError(r.tvErrName, true, getString(R.string.detail_booking_payment_name_invalid));
+            allOk = false;
+        } else {
+            setBookingFieldError(r.tvErrName, false, "");
         }
-        String email = etEmail.getText().toString().trim();
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(requireContext(), R.string.detail_booking_payment_email_invalid, Toast.LENGTH_SHORT).show();
-            return false;
+
+        String email = r.etEmail.getText().toString().trim();
+        if (email.isEmpty()) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrEmail, true, getString(R.string.detail_booking_payment_email_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrEmail, false, "");
+            }
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            setBookingFieldError(r.tvErrEmail, true, getString(R.string.detail_booking_payment_email_invalid));
+            allOk = false;
+        } else {
+            setBookingFieldError(r.tvErrEmail, false, "");
         }
-        String phoneDigits = digitsOnly(etPhone.getText().toString());
-        if (phoneDigits.length() < 8) {
-            Toast.makeText(requireContext(), R.string.detail_booking_payment_phone_invalid, Toast.LENGTH_SHORT).show();
-            return false;
+
+        String phoneDigits = digitsOnly(r.etPhone.getText().toString());
+        if (phoneDigits.isEmpty()) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrPhone, true, getString(R.string.detail_booking_payment_phone_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrPhone, false, "");
+            }
+        } else if (phoneDigits.length() < 8) {
+            setBookingFieldError(r.tvErrPhone, true, getString(R.string.detail_booking_payment_phone_invalid));
+            allOk = false;
+        } else {
+            setBookingFieldError(r.tvErrPhone, false, "");
         }
-        String document = etDocument.getText().toString().trim().replace(".", "").replace(" ", "");
-        if (document.length() < 7) {
-            Toast.makeText(requireContext(), R.string.detail_booking_payment_document_invalid, Toast.LENGTH_SHORT).show();
-            return false;
+
+        String document = r.etDocument.getText().toString().trim().replace(".", "").replace(" ", "");
+        if (document.isEmpty()) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrDocument, true, getString(R.string.detail_booking_payment_document_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrDocument, false, "");
+            }
+        } else if (document.length() < 7) {
+            setBookingFieldError(r.tvErrDocument, true, getString(R.string.detail_booking_payment_document_invalid));
+            allOk = false;
+        } else {
+            setBookingFieldError(r.tvErrDocument, false, "");
         }
-        String cardDigits = digitsOnly(etCardNumber.getText().toString());
-        if (cardDigits.length() < 13 || cardDigits.length() > 19) {
-            Toast.makeText(requireContext(), R.string.detail_booking_payment_card_invalid, Toast.LENGTH_SHORT).show();
-            return false;
+
+        String cardDigits = digitsOnly(r.etCardNumber.getText().toString());
+        if (cardDigits.isEmpty()) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrCardNumber, true, getString(R.string.detail_booking_payment_card_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrCardNumber, false, "");
+            }
+        } else if (cardDigits.length() < 13) {
+            setBookingFieldError(r.tvErrCardNumber, true, getString(R.string.detail_booking_payment_card_short));
+            allOk = false;
+        } else if (cardDigits.length() > 19) {
+            setBookingFieldError(r.tvErrCardNumber, true, getString(R.string.detail_booking_payment_card_invalid));
+            allOk = false;
+        } else {
+            setBookingFieldError(r.tvErrCardNumber, false, "");
         }
-        if (!isCardExpiryValid(etExpiry.getText().toString())) {
-            Toast.makeText(requireContext(), R.string.detail_booking_payment_expiry_invalid, Toast.LENGTH_SHORT).show();
-            return false;
+
+        String expiryRaw = r.etExpiry.getText().toString().trim();
+        String expiryDigits = digitsOnly(expiryRaw);
+        if (expiryDigits.isEmpty()) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrExpiry, true, getString(R.string.detail_booking_payment_expiry_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrExpiry, false, "");
+            }
+        } else if (expiryDigits.length() < 4) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrExpiry, true, getString(R.string.detail_booking_payment_expiry_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrExpiry, false, "");
+            }
+        } else if (!isCardExpiryValid(expiryRaw)) {
+            setBookingFieldError(r.tvErrExpiry, true, getString(R.string.detail_booking_payment_expiry_invalid));
+            allOk = false;
+        } else {
+            setBookingFieldError(r.tvErrExpiry, false, "");
         }
-        String cvvDigits = digitsOnly(etCvv.getText().toString());
-        if (cvvDigits.length() < 3 || cvvDigits.length() > 4) {
-            Toast.makeText(requireContext(), R.string.detail_booking_payment_cvv_invalid, Toast.LENGTH_SHORT).show();
-            return false;
+
+        String cvvDigits = digitsOnly(r.etCvv.getText().toString());
+        if (cvvDigits.isEmpty()) {
+            if (strictEmpty) {
+                setBookingFieldError(r.tvErrCvv, true, getString(R.string.detail_booking_payment_cvv_invalid));
+                allOk = false;
+            } else {
+                setBookingFieldError(r.tvErrCvv, false, "");
+            }
+        } else if (cvvDigits.length() < 3 || cvvDigits.length() > 4) {
+            setBookingFieldError(r.tvErrCvv, true, getString(R.string.detail_booking_payment_cvv_invalid));
+            allOk = false;
+        } else {
+            setBookingFieldError(r.tvErrCvv, false, "");
         }
-        return true;
+
+        return allOk;
+    }
+
+    private void focusFirstVisibleBookingPaymentIssue(@NonNull BookingPaymentRefs p) {
+        if (p.tvErrName.getVisibility() == View.VISIBLE) {
+            p.etName.requestFocus();
+            return;
+        }
+        if (p.tvErrEmail.getVisibility() == View.VISIBLE) {
+            p.etEmail.requestFocus();
+            return;
+        }
+        if (p.tvErrPhone.getVisibility() == View.VISIBLE) {
+            p.etPhone.requestFocus();
+            return;
+        }
+        if (p.tvErrDocument.getVisibility() == View.VISIBLE) {
+            p.etDocument.requestFocus();
+            return;
+        }
+        if (p.tvErrCardNumber.getVisibility() == View.VISIBLE) {
+            p.etCardNumber.requestFocus();
+            return;
+        }
+        if (p.tvErrExpiry.getVisibility() == View.VISIBLE) {
+            p.etExpiry.requestFocus();
+            return;
+        }
+        if (p.tvErrCvv.getVisibility() == View.VISIBLE) {
+            p.etCvv.requestFocus();
+        }
     }
 
     /**

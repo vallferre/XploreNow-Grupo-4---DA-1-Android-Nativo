@@ -22,6 +22,8 @@ public final class ActivityItem {
     public final String currency;
     public final long availableSpots;
     public final double rating;
+    /** Cuántas reseñas (calificaciones) se agregaron; el promedio {@link #rating} se deriva en RTDB. */
+    public final long reviewCount;
     public final boolean featured;
     public final String coverImageUrl;
     /** Día de la actividad tal como viene en Firestore (ej. "domingo", "miércoles"). */
@@ -37,6 +39,7 @@ public final class ActivityItem {
             String currency,
             long availableSpots,
             double rating,
+            long reviewCount,
             boolean featured,
             String coverImageUrl,
             String day
@@ -50,6 +53,7 @@ public final class ActivityItem {
         this.currency = currency != null ? currency : "";
         this.availableSpots = availableSpots;
         this.rating = rating;
+        this.reviewCount = reviewCount;
         this.featured = featured;
         this.coverImageUrl = coverImageUrl != null ? coverImageUrl : "";
         this.day = day != null ? day : "";
@@ -68,13 +72,14 @@ public final class ActivityItem {
         String currency = safeString(doc.getString("currency"));
         long spots = longVal(doc.getLong("available_spots"));
         double rating = doubleVal(doc.get("rating"));
+        long reviewCount = longVal(doc.getLong("review_count"));
         boolean isFeatured = Boolean.TRUE.equals(doc.getBoolean("is_featured"));
         String cover = safeString(doc.getString("cover_image_url"));
         String day = safeString(doc.getString("day"));
 
         return new ActivityItem(
                 id, name, destination, category, duration, price, currency,
-                spots, rating, isFeatured, cover, day
+                spots, rating, reviewCount, isFeatured, cover, day
         );
     }
 
