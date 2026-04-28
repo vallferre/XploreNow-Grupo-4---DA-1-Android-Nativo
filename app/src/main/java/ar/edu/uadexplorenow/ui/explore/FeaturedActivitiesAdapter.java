@@ -75,6 +75,13 @@ public class FeaturedActivitiesAdapter extends RecyclerView.Adapter<FeaturedActi
         }
         h.tvMeta.setText(meta);
         h.tvPrice.setText(a.formattedPrice());
+        if (a.reviewCount <= 0) {
+            h.tvRating.setVisibility(View.GONE);
+        } else {
+            h.tvRating.setVisibility(View.VISIBLE);
+            h.tvRating.setText(h.itemView.getContext().getString(
+                    R.string.explore_rating_with_count, a.rating, a.reviewCount));
+        }
 
         if (!a.coverImageUrl.isEmpty()) {
             Glide.with(h.ivCover.getContext())
@@ -122,6 +129,7 @@ public class FeaturedActivitiesAdapter extends RecyclerView.Adapter<FeaturedActi
         final TextView tvCategoryTag;
         final TextView tvName;
         final TextView tvMeta;
+        final TextView tvRating;
         final TextView tvPrice;
 
         Holder(@NonNull View itemView) {
@@ -131,6 +139,7 @@ public class FeaturedActivitiesAdapter extends RecyclerView.Adapter<FeaturedActi
             tvCategoryTag = itemView.findViewById(R.id.tvCategoryTag);
             tvName = itemView.findViewById(R.id.tvName);
             tvMeta = itemView.findViewById(R.id.tvMeta);
+            tvRating = itemView.findViewById(R.id.tvRating);
             tvPrice = itemView.findViewById(R.id.tvPrice);
         }
     }

@@ -249,7 +249,6 @@ public class ExploreFragment extends Fragment {
                 requireContext(), FirebaseAuth.getInstance().getCurrentUser());
         loadUserPreferences(effectiveUid);
         loadNews();
-        loadActivities();
     }
 
     @Override
@@ -257,6 +256,7 @@ public class ExploreFragment extends Fragment {
         super.onResume();
         if (FirebaseAuth.getInstance().getCurrentUser() != null && !effectiveUid.isEmpty()) {
             loadFavoritesFromServer();
+            loadActivities();
         }
     }
 

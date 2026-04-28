@@ -83,7 +83,12 @@ public class AllActivitiesAdapter extends RecyclerView.Adapter<AllActivitiesAdap
         tvTagCategory.setText(ActivityItem.categoryLabel(a.category));
         tvTagDuration.setText(a.formattedDurationHours());
         tvPriceRow.setText(a.listPriceSuffix());
-        tvRating.setText(itemView.getContext().getString(R.string.explore_rating, a.rating));
+        if (a.reviewCount <= 0) {
+            tvRating.setText(R.string.explore_rating_none);
+        } else {
+            tvRating.setText(itemView.getContext().getString(
+                    R.string.explore_rating_with_count, a.rating, a.reviewCount));
+        }
 
         if (a.availableSpots > 0 && a.availableSpots <= CUPOS_UMBRAL) {
             tvCupos.setVisibility(View.VISIBLE);

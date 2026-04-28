@@ -27,6 +27,8 @@
     <string name="explore_load_error">No se pudieron cargar las actividades</string>
     <string name="explore_empty">No hay actividades con esos filtros</string>
     <string name="explore_rating">★ %1$.1f</string>
+    <string name="explore_rating_with_count">★ %1$.1f (%2$d)</string>
+    <string name="explore_rating_none">Sin reseñas</string>
     <string name="explore_nav_home">Inicio</string>
     <string name="explore_nav_favorites">Favoritos</string>
     <string name="explore_nav_list">Mis actividades</string>
@@ -58,6 +60,7 @@
 
     <string name="detail_rating_reviews">%1$.1f (%2$d reseñas)</string>
     <string name="detail_subtitle_fmt">📍 %1$s  ·  ★ %2$.1f (%3$d reseñas)</string>
+    <string name="detail_subtitle_no_reviews_yet">📍 %1$s  ·  Sin reseñas aún</string>
     <string name="detail_label_duration">Duración</string>
     <string name="detail_label_language">Idioma</string>
     <string name="detail_label_spots">Cupos</string>
@@ -262,6 +265,7 @@
     <string name="detail_booking_payment_phone_invalid">Ingresa un telefono valido.</string>
     <string name="detail_booking_payment_document_invalid">Ingresa un documento valido.</string>
     <string name="detail_booking_payment_card_invalid">Verifica el numero de tarjeta.</string>
+    <string name="detail_booking_payment_card_short">El numero debe tener entre 13 y 19 digitos.</string>
     <string name="detail_booking_payment_expiry_invalid">Verifica el vencimiento (MM/AA).</string>
     <string name="detail_booking_payment_cvv_invalid">Ingresa el codigo de seguridad (3 o 4 digitos).</string>
     <string name="reservation_detail_title">Detalle de reserva</string>

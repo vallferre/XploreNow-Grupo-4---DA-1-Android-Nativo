@@ -2,6 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bookingDialogScroll"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:fillViewport="true"
@@ -254,6 +255,17 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvErrPayerFullName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/explore_warning"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="Ejemplo de error"
+                tools:visibility="visible" />
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -275,6 +287,16 @@
                 android:textColor="@color/explore_title"
                 android:textColorHint="@color/explore_muted"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvErrPayerEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/explore_warning"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -300,6 +322,16 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvErrPayerPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/explore_warning"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -321,6 +353,16 @@
                 android:textColor="@color/explore_title"
                 android:textColorHint="@color/explore_muted"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvErrPayerDocument"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/explore_warning"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -354,6 +396,16 @@
                 android:textColor="@color/explore_title"
                 android:textColorHint="@color/explore_muted"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvErrCardNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/explore_warning"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -389,6 +441,16 @@
                         android:textColor="@color/explore_title"
                         android:textColorHint="@color/explore_muted"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvErrCardExpiry"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/explore_warning"
+                        android:textSize="12sp"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
                 </LinearLayout>
 
                 <Space
@@ -423,6 +485,16 @@
                         android:textColor="@color/explore_title"
                         android:textColorHint="@color/explore_muted"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvErrCardCvv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/explore_warning"
+                        android:textSize="12sp"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
                 </LinearLayout>
             </LinearLayout>
             </LinearLayout>

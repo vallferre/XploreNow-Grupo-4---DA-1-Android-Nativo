@@ -36,6 +36,7 @@ public class CachedActivityEntity {
     @ColumnInfo(name = "currency")      public String currency;
     @ColumnInfo(name = "spots")         public long availableSpots;
     @ColumnInfo(name = "rating")        public double rating;
+    @ColumnInfo(name = "review_count")  public long reviewCount;
     @ColumnInfo(name = "featured")      public boolean featured;
     @ColumnInfo(name = "cover_url")     public String coverImageUrl;
     @ColumnInfo(name = "day")           public String day;
@@ -51,6 +52,7 @@ public class CachedActivityEntity {
         e.currency       = item.currency;
         e.availableSpots = item.availableSpots;
         e.rating         = item.rating;
+        e.reviewCount    = item.reviewCount;
         e.featured       = item.featured;
         e.coverImageUrl  = item.coverImageUrl;
         e.day            = item.day;
@@ -61,7 +63,7 @@ public class CachedActivityEntity {
         return new ActivityItem(
                 id, name, destination, category,
                 durationMinutes, price, currency,
-                availableSpots, rating, featured, coverImageUrl, day
+                availableSpots, rating, reviewCount, featured, coverImageUrl, day
         );
     }
 

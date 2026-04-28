@@ -262,6 +262,9 @@ public final class ReservationRepository {
                                 guideRating,
                                 reviewComment,
                                 ratedAt);
+                        aggregateActivityRatingAfterUserReview(
+                                reservation.activityId,
+                                activityRating);
                         callback.onSuccess();
                     }
 
@@ -271,6 +274,59 @@ public final class ReservationRepository {
                         callback.onError("Error de red al guardar la calificacion.");
                     }
                 });
+    }
+
+    /**
+     * Actualiza {@code rating} y {@code review_count} de la actividad en RTDB en base al
+     * promedio acumulado de las calificaciones a la experiencia ({@code activity_rating}).
+     */
+    private void aggregateActivityRatingAfterUserReview(
+            @NonNull String activityId,
+            double newActivityStars
+    ) {
+        if (activityId.isEmpty()) {
+            return;
+        }
+        realtimeDatabaseApi.getActivity(activityId).enqueue(new Callback<ActivityRtdbDto>() {
+            @Override
+            public void onResponse(
+                    @NonNull Call<ActivityRtdbDto> call,
+                    @NonNull Response<ActivityRtdbDto> response
+            ) {
+                ActivityRtdbDto body = response.isSuccessful() ? response.body() : null;
+                double oldAvg = body != null && body.rating != null ? body.rating : 0d;
+                long oldCount = body != null && body.reviewCount != null ? body.reviewCount : 0L;
+                long nextCount = oldCount + 1L;
+                double nextAvg = nextCount <= 0
+                        ? newActivityStars
+                        : (oldAvg * oldCount + newActivityStars) / nextCount;
+                nextAvg = Math.round(nextAvg * 100d) / 100d;
+
+                Map<String, Object> patch = new LinkedHashMap<>();
+                patch.put("rating", nextAvg);
+                patch.put("review_count", nextCount);
+
+                realtimeDatabaseApi.patchActivity(activityId, patch).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call2, @NonNull Response<Void> resp2) {
+                        if (!resp2.isSuccessful()) {
+                            Log.w(TAG, "No se pudo actualizar rating agregado de actividad " + activityId
+                                    + " HTTP " + resp2.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call2, @NonNull Throwable t) {
+                        Log.w(TAG, "Red: no se pudo actualizar rating agregado de actividad " + activityId, t);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ActivityRtdbDto> call, @NonNull Throwable t) {
+                Log.w(TAG, "No se leyó la actividad para rating agregado: " + activityId, t);
+            }
+        });
     }
 
     private void syncActivitySpotsBestEffort(@NonNull String activityId, long targetSpots) {
