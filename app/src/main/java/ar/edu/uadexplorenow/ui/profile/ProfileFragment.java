@@ -63,6 +63,7 @@ import androidx.biometric.BiometricPrompt;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.local.BiometricPrefs;
+import ar.edu.uadexplorenow.data.local.cache.UserProfileFileCache;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ReservationItem;
@@ -78,6 +79,8 @@ public class ProfileFragment extends Fragment {
 
     @Inject
     RealtimeDatabaseApi realtimeDatabaseApi;
+    @Inject
+    UserProfileFileCache userProfileFileCache;
 
     private static final String TAG = "ProfileFragment";
 
@@ -230,6 +233,9 @@ public class ProfileFragment extends Fragment {
                 if (loadedUser.phone == null) loadedUser.phone = "";
                 if (loadedUser.photoUrl == null) loadedUser.photoUrl = "";
                 if (loadedUser.name == null) loadedUser.name = "";
+                if (body != null) {
+                    new Thread(() -> userProfileFileCache.save(body)).start();
+                }
                 syncEmailFromAuthIfNeeded(currentUser, loadedUser);
                 canSaveProfile = true;
                 setLoading(false);
@@ -240,9 +246,23 @@ public class ProfileFragment extends Fragment {
             public void onFailure(@NonNull Call<UserRtdbDto> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 setLoading(false);
-                loadedUser = buildFallbackUser(currentUser);
-                canSaveProfile = false;
-                bindUser(loadedUser);
+                UserRtdbDto cached = userProfileFileCache.load();
+                if (cached != null) {
+                    if (isBlank(cached.id))    cached.id    = effectiveUid;
+                    if (isBlank(cached.email)) cached.email = effectiveEmail;
+                    if (cached.preferences == null) cached.preferences = new ArrayList<>();
+                    if (cached.legacyPreferences == null) cached.legacyPreferences = new ArrayList<>();
+                    if (cached.phone == null) cached.phone = "";
+                    if (cached.photoUrl == null) cached.photoUrl = "";
+                    if (cached.name == null) cached.name = "";
+                    loadedUser = cached;
+                    canSaveProfile = false;
+                    bindUser(loadedUser);
+                } else {
+                    loadedUser = buildFallbackUser(currentUser);
+                    canSaveProfile = false;
+                    bindUser(loadedUser);
+                }
                 Toast.makeText(requireContext(), R.string.profile_load_error, Toast.LENGTH_SHORT).show();
             }
         });

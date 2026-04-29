@@ -1,8 +1,13 @@
 package ar.edu.uadexplorenow.data;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import ar.edu.uadexplorenow.data.local.db.CachedFavoriteDao;
+import ar.edu.uadexplorenow.data.local.db.CachedFavoriteEntity;
 import ar.edu.uadexplorenow.data.model.FavoriteRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
@@ -14,6 +19,7 @@ import com.google.gson.JsonObject;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -28,6 +34,7 @@ public final class FavoritesRepository {
 
     private final RealtimeDatabaseApi api;
     private final Gson gson;
+    private final CachedFavoriteDao cachedFavoriteDao;
 
     public interface VoidCallback {
         void onDone(@Nullable String errorMessage);
@@ -42,9 +49,14 @@ public final class FavoritesRepository {
     }
 
     @Inject
-    public FavoritesRepository(@NonNull RealtimeDatabaseApi api, @NonNull Gson gson) {
+    public FavoritesRepository(
+            @NonNull RealtimeDatabaseApi api,
+            @NonNull Gson gson,
+            @NonNull CachedFavoriteDao cachedFavoriteDao
+    ) {
         this.api = api;
         this.gson = gson;
+        this.cachedFavoriteDao = cachedFavoriteDao;
     }
 
     public void loadAll(@NonNull String uid, @NonNull FavoritesMapCallback callback) {
@@ -52,17 +64,35 @@ public final class FavoritesRepository {
             @Override
             public void onResponse(@NonNull Call<JsonElement> call, @NonNull Response<JsonElement> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    callback.onResult(Collections.emptyMap());
+                    loadFromCache(uid, callback);
                     return;
                 }
-                callback.onResult(parseFavoritesMap(response.body()));
+                Map<String, FavoriteRtdbDto> result = parseFavoritesMap(response.body());
+                saveToCache(uid, result);
+                callback.onResult(result);
             }
 
             @Override
             public void onFailure(@NonNull Call<JsonElement> call, @NonNull Throwable t) {
-                callback.onResult(Collections.emptyMap());
+                loadFromCache(uid, callback);
             }
         });
+    }
+
+    private void saveToCache(@NonNull String uid, @NonNull Map<String, FavoriteRtdbDto> favMap) {
+        List<CachedFavoriteEntity> entities = CachedFavoriteEntity.fromMap(uid, favMap);
+        new Thread(() -> {
+            cachedFavoriteDao.deleteByUid(uid);
+            cachedFavoriteDao.insertAll(entities);
+        }).start();
+    }
+
+    private void loadFromCache(@NonNull String uid, @NonNull FavoritesMapCallback callback) {
+        new Thread(() -> {
+            List<CachedFavoriteEntity> cached = cachedFavoriteDao.getAllByUid(uid);
+            Map<String, FavoriteRtdbDto> result = CachedFavoriteEntity.toMap(cached);
+            new Handler(Looper.getMainLooper()).post(() -> callback.onResult(result));
+        }).start();
     }
 
     public void loadOne(@NonNull String uid, @NonNull String activityId, @NonNull OneFavoriteCallback callback) {
