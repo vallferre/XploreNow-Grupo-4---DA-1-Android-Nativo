@@ -371,7 +371,7 @@ public class ExploreFragment extends Fragment {
 
     private void renderNews() {
         newsAdapter.submit(newsItems);
-        boolean showNews = !newsItems.isEmpty();
+        boolean showNews = !newsItems.isEmpty() && searchQuery.isEmpty();
         tvSectionNews.setVisibility(showNews ? View.VISIBLE : View.GONE);
         rvNews.setVisibility(showNews ? View.VISIBLE : View.GONE);
     }
@@ -418,14 +418,28 @@ public class ExploreFragment extends Fragment {
             filtered.add(a);
         }
 
+        Collections.sort(filtered, (a, b) -> {
+            boolean aOut = a.availableSpots <= 0;
+            boolean bOut = b.availableSpots <= 0;
+            if (aOut != bOut) {
+                return aOut ? 1 : -1;
+            }
+            return a.name.compareToIgnoreCase(b.name);
+        });
+
+        boolean searching = !searchQuery.isEmpty();
         List<ActivityItem> featured = buildRecommendedActivities(filtered);
 
-        featuredAdapter.submit(featured);
+        featuredAdapter.submit(searching ? Collections.emptyList() : featured);
         allAdapter.submit(filtered);
 
-        boolean showFeatured = !featured.isEmpty();
+        boolean showFeatured = !featured.isEmpty() && !searching;
         tvSectionFeatured.setVisibility(showFeatured ? View.VISIBLE : View.GONE);
         rvFeatured.setVisibility(showFeatured ? View.VISIBLE : View.GONE);
+
+        boolean showNews = !newsItems.isEmpty() && !searching;
+        tvSectionNews.setVisibility(showNews ? View.VISIBLE : View.GONE);
+        rvNews.setVisibility(showNews ? View.VISIBLE : View.GONE);
 
         tvEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
         rvAll.setVisibility(filtered.isEmpty() ? View.GONE : View.VISIBLE);

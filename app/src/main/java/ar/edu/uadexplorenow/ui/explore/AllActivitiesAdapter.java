@@ -90,13 +90,20 @@ public class AllActivitiesAdapter extends RecyclerView.Adapter<AllActivitiesAdap
                     R.string.explore_rating_with_count, a.rating, a.reviewCount));
         }
 
-        if (a.availableSpots > 0 && a.availableSpots <= CUPOS_UMBRAL) {
+        if (a.availableSpots <= 0) {
             tvCupos.setVisibility(View.VISIBLE);
+            tvCupos.setText(R.string.detail_no_spots);
+            tvCupos.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.explore_muted));
+        } else if (a.availableSpots <= CUPOS_UMBRAL) {
+            tvCupos.setVisibility(View.VISIBLE);
+            tvCupos.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.explore_warning));
             tvCupos.setText(itemView.getContext().getString(
                     R.string.explore_cupos_left, (int) a.availableSpots));
         } else {
             tvCupos.setVisibility(View.GONE);
         }
+
+        itemView.setAlpha(a.availableSpots <= 0 ? 0.58f : 1f);
 
         if (loadImages && !a.coverImageUrl.isEmpty()) {
             Glide.with(ivThumb.getContext())
