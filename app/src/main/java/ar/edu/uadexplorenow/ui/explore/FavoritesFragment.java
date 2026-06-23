@@ -28,6 +28,7 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.domain.FavoriteListRow;
 import ar.edu.uadexplorenow.domain.FavoriteListRow.SpotsNovelty;
+import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -162,6 +163,7 @@ public class FavoritesFragment extends Fragment {
                             activityById.put(a.id, a);
                         }
                     }
+                    OfflineBannerHelper.hide(getView());
                     renderFavorites(favMap);
                 }
 
@@ -184,6 +186,7 @@ public class FavoritesFragment extends Fragment {
                 for (ActivityItem a : CachedActivityEntity.toList(cached)) {
                     activityById.put(a.id, a);
                 }
+                OfflineBannerHelper.show(getView());
                 renderFavorites(favMap);
             });
         }).start();

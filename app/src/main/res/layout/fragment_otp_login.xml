@@ -138,10 +138,11 @@
 
                 <!-- 6 campos del OTP en fila -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
+                    android:baselineAligned="false"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
                     <EditText
                         android:id="@+id/etOtpL1"

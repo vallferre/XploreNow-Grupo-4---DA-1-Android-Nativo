@@ -1,7 +1,5 @@
 package ar.edu.uadexplorenow.ui.auth;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.text.Editable;
@@ -27,11 +25,11 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.Locale;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.auth.OtpVerificationHelper;
 import ar.edu.uadexplorenow.data.email.OtpEmailSender;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
@@ -84,10 +82,7 @@ public class OtpLoginFragment extends Fragment {
     private CountDownTimer countDownTimer;
     private String         otpEmail = "";
 
-    private static final long   OTP_EXPIRY_MS = 5 * 60 * 1000L;
-    private static final String PREFS_NAME    = "otp_login_prefs";
-    private static final String KEY_CODE      = "code";
-    private static final String KEY_EXPIRES   = "expires_at";
+    private static final String PREFS_NAME = OtpVerificationHelper.PREFS_LOGIN;
 
     // ─── Ciclo de vida ────────────────────────────────────────────────────────
 
@@ -229,18 +224,10 @@ public class OtpLoginFragment extends Fragment {
      * En producción: llamar a una Cloud Function que envíe el código por email.
      */
     private void generateAndStoreOtp() {
-        String code      = String.format(Locale.getDefault(), "%06d", new Random().nextInt(1_000_000));
-        long   expiresAt = System.currentTimeMillis() + OTP_EXPIRY_MS;
+        String code = OtpVerificationHelper.generateCode();
+        OtpVerificationHelper.storeCode(requireContext(), PREFS_NAME, code);
 
-        requireContext()
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_CODE, code)
-                .putLong(KEY_EXPIRES, expiresAt)
-                .apply();
-
-        // ── Envío de email ─────────────────────────────────────────────────────
-        OtpEmailSender.send(otpEmail, code, new OtpEmailSender.SendCallback() {
+        OtpVerificationHelper.sendByEmail(otpEmail, code, new OtpEmailSender.SendCallback() {
             @Override public void onSuccess() {
                 if (!isAdded()) return;
                 Toast.makeText(requireContext(),
@@ -269,36 +256,32 @@ public class OtpLoginFragment extends Fragment {
 
     private void attemptVerifyOtp(View view) {
         String entered = getEnteredOtp();
+        OtpVerificationHelper.VerifyResult result = OtpVerificationHelper.verify(
+                requireContext(),
+                PREFS_NAME,
+                entered);
 
-        SharedPreferences prefs = requireContext()
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-
-        String storedCode = prefs.getString(KEY_CODE, null);
-        long   expiresAt  = prefs.getLong(KEY_EXPIRES, 0L);
-
-        if (storedCode == null) {
-            Toast.makeText(requireContext(),
-                    getString(R.string.otp_error_not_found), Toast.LENGTH_SHORT).show();
-            return;
+        switch (result) {
+            case NOT_FOUND:
+                Toast.makeText(requireContext(),
+                        getString(R.string.otp_error_not_found), Toast.LENGTH_SHORT).show();
+                return;
+            case EXPIRED:
+                Toast.makeText(requireContext(),
+                        getString(R.string.otp_error_expired), Toast.LENGTH_SHORT).show();
+                btnOtpLoginVerify.setEnabled(false);
+                btnOtpLoginResend.setEnabled(true);
+                return;
+            case INVALID:
+                Toast.makeText(requireContext(),
+                        getString(R.string.otp_error_invalid), Toast.LENGTH_SHORT).show();
+                clearOtpFields();
+                return;
+            case OK:
+                break;
         }
 
-        if (System.currentTimeMillis() > expiresAt) {
-            Toast.makeText(requireContext(),
-                    getString(R.string.otp_error_expired), Toast.LENGTH_SHORT).show();
-            btnOtpLoginVerify.setEnabled(false);
-            btnOtpLoginResend.setEnabled(true);
-            return;
-        }
-
-        if (!entered.equals(storedCode)) {
-            Toast.makeText(requireContext(),
-                    getString(R.string.otp_error_invalid), Toast.LENGTH_SHORT).show();
-            clearOtpFields();
-            return;
-        }
-
-        // OTP válido → limpiar prefs y crear sesión Firebase
-        prefs.edit().clear().apply();
+        OtpVerificationHelper.clear(requireContext(), PREFS_NAME);
         if (countDownTimer != null) countDownTimer.cancel();
         btnOtpLoginVerify.setEnabled(false);
 
@@ -400,7 +383,7 @@ public class OtpLoginFragment extends Fragment {
         if (countDownTimer != null) countDownTimer.cancel();
         btnOtpLoginResend.setEnabled(false);
 
-        countDownTimer = new CountDownTimer(OTP_EXPIRY_MS, 1000) {
+        countDownTimer = new CountDownTimer(OtpVerificationHelper.OTP_EXPIRY_MS, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 if (!isAdded()) return;
