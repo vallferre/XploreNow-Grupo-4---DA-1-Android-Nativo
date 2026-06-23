@@ -14,6 +14,25 @@
     <string name="error_password_min_length">Mínimo 6 caracteres</string>
     <string name="error_passwords_no_match">Las contraseñas no coinciden</string>
     <string name="error_fields_required">Completá todos los campos</string>
+    <string name="error_email_already_registered">Este email ya está registrado</string>
+    <string name="register_continue_to_otp">VERIFICAR EMAIL</string>
+    <string name="otp_register_verify_subtitle">Verificá tu email para completar el registro</string>
+    <string name="otp_verify_btn">VERIFICAR</string>
+    <string name="otp_resend_btn">REENVIAR CÓDIGO</string>
+    <string name="otp_back_to_form">Volver al formulario</string>
+
+    <string name="detail_booking_payer_summary_fmt">Reservando como: %1$s · %2$s</string>
+    <string name="detail_booking_payer_summary_phone_fmt">Tel: %1$s</string>
+    <string name="detail_booking_payer_profile_hint">Datos tomados de tu perfil. Podés cambiar el nombre y el email si lo necesitás.</string>
+
+    <string name="booking_confirmation_title">¡Reserva confirmada!</string>
+    <string name="booking_confirmation_subtitle">Tu lugar quedó reservado correctamente.</string>
+    <string name="booking_confirmation_icon_desc">Reserva confirmada</string>
+    <string name="booking_confirmation_date_time_fmt">%1$s · %2$s</string>
+    <string name="booking_confirmation_participants_fmt">%1$d %2$s</string>
+    <string name="booking_confirmation_view_reservation">Ver mi reserva</string>
+    <string name="booking_confirmation_continue">Seguir explorando</string>
+
 
     <!-- Errores Firebase -->
     <string name="error_login_failed">Email o contraseña incorrectos</string>

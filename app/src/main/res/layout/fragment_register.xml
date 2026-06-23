@@ -8,11 +8,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="32dp"
-        android:gravity="center_horizontal">
+        android:padding="32dp">
 
-        <!-- Ícono superior -->
         <ImageView
             android:layout_width="80dp"
             android:layout_height="80dp"
@@ -20,156 +19,160 @@
             android:src="@android:drawable/ic_menu_compass"
             android:tint="#1A1A2E" />
 
-        <!-- Título -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:letterSpacing="0.05"
             android:text="XploreNow"
-            android:textSize="32sp"
-            android:textStyle="bold"
             android:textColor="#1A1A2E"
-            android:letterSpacing="0.05" />
+            android:textSize="32sp"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Creá tu cuenta"
-            android:textSize="14sp"
-            android:textColor="#888888" />
+            android:textColor="#888888"
+            android:textSize="14sp" />
 
         <LinearLayout
+            android:id="@+id/stepRegisterForm"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card_rounded"
-            android:padding="24dp"
-            android:elevation="4dp">
+            android:orientation="vertical">
 
-            <!-- Nombre -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nombre"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#1A1A2E"
-                android:letterSpacing="0.08" />
-
-            <EditText
-                android:id="@+id/etName"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:inputType="textPersonName|textCapWords"
-                android:hint="Tu nombre completo"
-                android:textSize="14sp"
-                android:textColor="#1A1A2E"
-                android:textColorHint="#BBBBBB" />
-
-            <!-- Email -->
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:text="Email"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#1A1A2E"
-                android:letterSpacing="0.08" />
+                android:layout_marginTop="32dp"
+                android:background="@drawable/bg_card_rounded"
+                android:elevation="4dp"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-            <EditText
-                android:id="@+id/etEmail"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:inputType="textEmailAddress"
-                android:hint="usuario@email.com"
-                android:textSize="14sp"
-                android:textColor="#1A1A2E"
-                android:textColorHint="#BBBBBB" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="Nombre"
+                    android:textColor="#1A1A2E"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
-            <!-- Contraseña -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:text="Contraseña"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#1A1A2E"
-                android:letterSpacing="0.08" />
+                <EditText
+                    android:id="@+id/etName"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:hint="Tu nombre completo"
+                    android:inputType="textPersonName|textCapWords"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB"
+                    android:textSize="14sp" />
 
-            <EditText
-                android:id="@+id/etPassword"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:inputType="textPassword"
-                android:hint="Mínimo 6 caracteres"
-                android:textSize="14sp"
-                android:textColor="#1A1A2E"
-                android:textColorHint="#BBBBBB" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:letterSpacing="0.08"
+                    android:text="Email"
+                    android:textColor="#1A1A2E"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
-            <!-- Confirmar contraseña -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:text="Confirmá la contraseña"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#1A1A2E"
-                android:letterSpacing="0.08" />
+                <EditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:hint="usuario@email.com"
+                    android:inputType="textEmailAddress"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB"
+                    android:textSize="14sp" />
 
-            <EditText
-                android:id="@+id/etConfirmPassword"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:inputType="textPassword"
-                android:hint="Repetí tu contraseña"
-                android:textSize="14sp"
-                android:textColor="#1A1A2E"
-                android:textColorHint="#BBBBBB" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:letterSpacing="0.08"
+                    android:text="Contraseña"
+                    android:textColor="#1A1A2E"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
-            <ProgressBar
-                android:id="@+id/progressForm"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="16dp"
-                android:visibility="gone" />
+                <EditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:hint="Mínimo 6 caracteres"
+                    android:inputType="textPassword"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB"
+                    android:textSize="14sp" />
 
-            <Button
-                android:id="@+id/btnRegister"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_button_primary"
-                android:text="CREAR CUENTA"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:letterSpacing="0.08"
+                    android:text="Confirmá la contraseña"
+                    android:textColor="#1A1A2E"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
+                <EditText
+                    android:id="@+id/etConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input"
+                    android:hint="Repetí tu contraseña"
+                    android:inputType="textPassword"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textColor="#1A1A2E"
+                    android:textColorHint="#BBBBBB"
+                    android:textSize="14sp" />
+
+                <ProgressBar
+                    android:id="@+id/progressForm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone" />
+
+                <Button
+                    android:id="@+id/btnRegister"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_button_primary"
+                    android:letterSpacing="0.1"
+                    android:text="@string/register_continue_to_otp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Ir al login -->
+        <include
+            android:id="@+id/stepRegisterOtp"
+            layout="@layout/include_otp_verification_step" />
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -180,19 +183,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="¿Ya tenés cuenta? "
-                android:textSize="14sp"
-                android:textColor="#888888" />
+                android:textColor="#888888"
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/tvGoToLogin"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Iniciá sesión"
-                android:textSize="14sp"
                 android:textColor="#E63946"
+                android:textSize="14sp"
                 android:textStyle="bold" />
-
         </LinearLayout>
-
     </LinearLayout>
 </ScrollView>

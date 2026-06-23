@@ -46,6 +46,7 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.domain.NewsItem;
 import ar.edu.uadexplorenow.ui.auth.LoginFragment;
+import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -310,6 +311,7 @@ public class ExploreFragment extends Fragment {
                 Collections.sort(allActivities, (a, b) -> a.name.compareToIgnoreCase(b.name));
                 recomputeCatalogMaxPrice();
                 applyFilters();
+                OfflineBannerHelper.hide(getView());
                 final List<ActivityItem> toCache = new ArrayList<>(allActivities);
                 cacheExecutor.execute(() -> {
                     cachedActivityDao.deleteAll();
@@ -332,8 +334,9 @@ public class ExploreFragment extends Fragment {
                             allActivities.addAll(CachedActivityEntity.toList(cached));
                             recomputeCatalogMaxPrice();
                             applyFilters();
-                            Toast.makeText(requireContext(), R.string.explore_offline_cache, Toast.LENGTH_SHORT).show();
+                            OfflineBannerHelper.show(getView());
                         } else {
+                            OfflineBannerHelper.hide(getView());
                             Toast.makeText(requireContext(), R.string.explore_load_error, Toast.LENGTH_LONG).show();
                         }
                     });

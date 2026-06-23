@@ -36,10 +36,13 @@ import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.FavoritesRepository;
 import ar.edu.uadexplorenow.data.ReservationRepository;
 import ar.edu.uadexplorenow.data.SessionStore;
+import ar.edu.uadexplorenow.data.local.cache.UserProfileFileCache;
 import ar.edu.uadexplorenow.data.local.db.CachedReservationDao;
 import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
+import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
+import ar.edu.uadexplorenow.ui.reservations.BookingConfirmationFragment;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.datepicker.CalendarConstraints;
@@ -78,6 +81,8 @@ public class ActivityDetailFragment extends Fragment {
     FavoritesRepository favoritesRepository;
     @Inject
     CachedReservationDao cachedReservationDao;
+    @Inject
+    UserProfileFileCache userProfileFileCache;
 
     public static final String ARG_ACTIVITY_ID = "activity_id";
 
@@ -515,6 +520,33 @@ public class ActivityDetailFragment extends Fragment {
             Toast.makeText(requireContext(), R.string.detail_no_schedule, Toast.LENGTH_SHORT).show();
             return;
         }
+
+        UserRtdbDto cachedProfile = userProfileFileCache.load();
+        realtimeDatabaseApi.getUser(effectiveUid).enqueue(new Callback<UserRtdbDto>() {
+            @Override
+            public void onResponse(@NonNull Call<UserRtdbDto> call, @NonNull Response<UserRtdbDto> response) {
+                if (!isAdded()) return;
+                UserRtdbDto profile = response.isSuccessful() && response.body() != null
+                        ? response.body()
+                        : cachedProfile;
+                presentReservationDialog(detail, initialDate, profile != null ? profile : cachedProfile);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<UserRtdbDto> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                presentReservationDialog(detail, initialDate, cachedProfile);
+            }
+        });
+    }
+
+    private void presentReservationDialog(
+            @NonNull ActivityDetail detail,
+            @NonNull LocalDate initialDate,
+            @Nullable UserRtdbDto profile
+    ) {
+        if (reservationRepository == null || !isAdded()) return;
+
         Log.d(TAG, "Abriendo dialogo de reserva para activityId=" + detail.id
                 + " day=" + detail.day
                 + " initialDate=" + initialDate);
@@ -542,6 +574,10 @@ public class ActivityDetailFragment extends Fragment {
         EditText etCardNumber = dialogView.findViewById(R.id.etCardNumber);
         EditText etCardExpiry = dialogView.findViewById(R.id.etCardExpiry);
         EditText etCardCvv = dialogView.findViewById(R.id.etCardCvv);
+        TextView tvBookingPayerSummary = dialogView.findViewById(R.id.tvBookingPayerSummary);
+        View layoutPayerName = dialogView.findViewById(R.id.layoutPayerName);
+        View layoutPayerEmail = dialogView.findViewById(R.id.layoutPayerEmail);
+        View layoutPayerPhone = dialogView.findViewById(R.id.layoutPayerPhone);
         ScrollView bookingScroll = dialogView.findViewById(R.id.bookingDialogScroll);
         TextView tvErrPayerFullName = dialogView.findViewById(R.id.tvErrPayerFullName);
         TextView tvErrPayerEmail = dialogView.findViewById(R.id.tvErrPayerEmail);
@@ -553,6 +589,17 @@ public class ActivityDetailFragment extends Fragment {
         attachCardExpiryMmYyFormatter(etCardExpiry);
 
         final boolean requiresPayment = detail.price > 0;
+        applyAuthenticatedPayerProfile(
+                profile,
+                etPayerFullName,
+                etPayerEmail,
+                etPayerPhone,
+                tvBookingPayerSummary,
+                layoutPayerName,
+                layoutPayerEmail,
+                layoutPayerPhone,
+                requiresPayment
+        );
 
         BookingPaymentRefs paymentRefs = new BookingPaymentRefs(
                 bookingScroll,
@@ -585,6 +632,7 @@ public class ActivityDetailFragment extends Fragment {
 
         int[] participants = {1};
         LocalDate[] selectedDate = {initialDate};
+        LocalDate today = LocalDate.now();
         List<LocalTime> availableTimes = detail.bookingTimes();
         LocalTime[] selectedTime = {availableTimes.isEmpty() ? null : availableTimes.get(0)};
 
@@ -739,14 +787,19 @@ public class ActivityDetailFragment extends Fragment {
                         detail.id,
                         slot,
                         participants[0],
-                        new ReservationRepository.ActionCallback() {
+                        new ReservationRepository.CreateReservationCallback() {
                             @Override
-                            public void onSuccess() {
+                            public void onSuccess(@NonNull String reservationId) {
                                 if (!isAdded()) return;
                                 Log.d(TAG, "Reserva creada con exito para activityId=" + detail.id);
                                 dialog.dismiss();
-                                Toast.makeText(requireContext(), R.string.detail_booking_success, Toast.LENGTH_SHORT).show();
-                                Navigation.findNavController(requireView()).navigate(R.id.activityHistoryFragment);
+                                navigateToBookingConfirmation(
+                                        reservationId,
+                                        detail,
+                                        selectedDate[0],
+                                        selectedTime[0],
+                                        participants[0]
+                                );
                             }
 
                             @Override
@@ -771,6 +824,78 @@ public class ActivityDetailFragment extends Fragment {
             return String.format(Locale.getDefault(), "$%.0f", total);
         }
         return String.format(Locale.getDefault(), "%.0f %s", total, currency);
+    }
+
+    private void applyAuthenticatedPayerProfile(
+            @Nullable UserRtdbDto profile,
+            @NonNull EditText etName,
+            @NonNull EditText etEmail,
+            @NonNull EditText etPhone,
+            @NonNull TextView tvSummary,
+            @NonNull View layoutName,
+            @NonNull View layoutEmail,
+            @NonNull View layoutPhone,
+            boolean requiresPayment
+    ) {
+        if (!requiresPayment) {
+            layoutName.setVisibility(View.GONE);
+            layoutEmail.setVisibility(View.GONE);
+            layoutPhone.setVisibility(View.GONE);
+            tvSummary.setVisibility(View.GONE);
+            return;
+        }
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String name = profile != null && profile.name != null ? profile.name.trim() : "";
+        String email = profile != null && profile.email != null ? profile.email.trim() : "";
+        if (email.isEmpty() && user != null) {
+            String effectiveEmail = SessionStore.getEffectiveEmail(requireContext(), user);
+            email = effectiveEmail != null ? effectiveEmail.trim() : "";
+        }
+        String phone = profile != null && profile.phone != null ? profile.phone.trim() : "";
+
+        boolean hasName = name.length() >= 3;
+        boolean hasEmail = !email.isEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches();
+        boolean hasPhone = digitsOnly(phone).length() >= 8;
+
+        if (hasName) {
+            etName.setText(name);
+        }
+        if (hasEmail) {
+            etEmail.setText(email);
+        }
+        if (hasPhone) {
+            etPhone.setText(phone);
+            layoutPhone.setVisibility(View.GONE);
+        }
+
+        if (hasName && hasEmail) {
+            tvSummary.setVisibility(View.VISIBLE);
+        } else {
+            tvSummary.setVisibility(View.GONE);
+        }
+    }
+
+    private void navigateToBookingConfirmation(
+            @NonNull String reservationId,
+            @NonNull ActivityDetail detail,
+            @NonNull LocalDate selectedDate,
+            @Nullable LocalTime selectedTime,
+            int participants
+    ) {
+        Bundle args = new Bundle();
+        args.putString(BookingConfirmationFragment.ARG_RESERVATION_ID, reservationId);
+        args.putString(BookingConfirmationFragment.ARG_ACTIVITY_NAME, detail.name);
+        args.putString(BookingConfirmationFragment.ARG_SELECTED_DATE, formatBookingDate(selectedDate));
+        args.putString(
+                BookingConfirmationFragment.ARG_SELECTED_TIME,
+                selectedTime != null ? selectedTime.format(BOOKING_TIME_FORMAT) : "");
+        args.putInt(BookingConfirmationFragment.ARG_PARTICIPANTS, participants);
+        if (detail.price > 0) {
+            args.putString(BookingConfirmationFragment.ARG_TOTAL, formatBookingTotal(detail, participants));
+        }
+        Navigation.findNavController(requireView())
+                .navigate(R.id.action_activityDetailFragment_to_bookingConfirmationFragment, args);
     }
 
     /**

@@ -29,6 +29,11 @@ public final class ReservationRepository {
         void onError(@NonNull String message);
     }
 
+    public interface CreateReservationCallback {
+        void onSuccess(@NonNull String reservationId);
+        void onError(@NonNull String message);
+    }
+
     private final RealtimeDatabaseApi realtimeDatabaseApi;
     private final CachedReservationDao cachedReservationDao;
 
@@ -45,7 +50,7 @@ public final class ReservationRepository {
             @NonNull String activityId,
             @NonNull ActivityDetail.BookingSlot selectedSlot,
             int participants,
-            @NonNull ActionCallback callback
+            @NonNull CreateReservationCallback callback
     ) {
         realtimeDatabaseApi.getActivity(activityId).enqueue(new Callback<ActivityRtdbDto>() {
             @Override
@@ -85,7 +90,7 @@ public final class ReservationRepository {
                                 }
                                 syncActivitySpotsBestEffort(activityId, Math.max(0, detail.availableSpots - participants));
                                 cacheNewReservation(uid, reservationId, detail, latestSlot != null ? latestSlot : selectedSlot, participants);
-                                callback.onSuccess();
+                                callback.onSuccess(reservationId);
                             }
 
                             @Override

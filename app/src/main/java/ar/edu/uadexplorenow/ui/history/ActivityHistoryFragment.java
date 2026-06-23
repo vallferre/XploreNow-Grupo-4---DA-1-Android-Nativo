@@ -34,6 +34,7 @@ import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 import ar.edu.uadexplorenow.domain.ReservationItem;
+import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
 import ar.edu.uadexplorenow.ui.reservations.ReservationDetailFragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -290,8 +291,7 @@ public class ActivityHistoryFragment extends Fragment {
                 allItems.addAll(CachedReservationEntity.toList(cached));
                 setupDestinationSpinner(allItems);
                 applyFilters();
-                showOfflineBanner();
-                Toast.makeText(requireContext(), R.string.history_offline_cache, Toast.LENGTH_SHORT).show();
+                OfflineBannerHelper.show(getView());
             });
         });
     }
@@ -302,15 +302,6 @@ public class ActivityHistoryFragment extends Fragment {
             cachedReservationDao.deleteByUid(uid);
             cachedReservationDao.insertAll(entities);
         });
-    }
-
-    private void showOfflineBanner() {
-        View view = getView();
-        if (view == null) return;
-        View banner = view.findViewById(R.id.offlineBanner);
-        if (banner != null) {
-            banner.setVisibility(View.VISIBLE);
-        }
     }
 
     private void maybeRenderReservations() {
@@ -324,6 +315,7 @@ public class ActivityHistoryFragment extends Fragment {
         }
 
         setLoading(false);
+        OfflineBannerHelper.hide(getView());
         allItems.clear();
         allItems.addAll(ReservationItem.buildList(loadedUser, detailById));
         setupDestinationSpinner(allItems);

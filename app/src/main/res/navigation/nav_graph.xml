@@ -146,6 +146,24 @@
             android:name="activity_id"
             app:argType="string"
             app:nullable="false" />
+        <action
+            android:id="@+id/action_activityDetailFragment_to_bookingConfirmationFragment"
+            app:destination="@id/bookingConfirmationFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/bookingConfirmationFragment"
+        android:name="ar.edu.uadexplorenow.ui.reservations.BookingConfirmationFragment"
+        android:label="@string/booking_confirmation_title"
+        tools:layout="@layout/fragment_booking_confirmation">
+        <action
+            android:id="@+id/action_bookingConfirmationFragment_to_reservationDetailFragment"
+            app:destination="@id/reservationDetailFragment" />
+        <action
+            android:id="@+id/action_bookingConfirmationFragment_to_exploreFragment"
+            app:destination="@id/exploreFragment"
+            app:popUpTo="@id/exploreFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment

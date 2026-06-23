@@ -232,6 +232,24 @@
                 </LinearLayout>
 
             <TextView
+                android:id="@+id/tvBookingPayerSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:lineSpacingExtra="3dp"
+                android:text="@string/detail_booking_payer_profile_hint"
+                android:textColor="@color/explore_muted"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <LinearLayout
+                android:id="@+id/layoutPayerName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -264,6 +282,14 @@
                 android:visibility="gone"
                 tools:text="Ejemplo de error"
                 tools:visibility="visible" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutPayerEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
             <TextView
                 android:layout_width="match_parent"
@@ -298,6 +324,14 @@
                 android:visibility="gone"
                 tools:visibility="visible" />
 
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutPayerPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -330,6 +364,8 @@
                 android:textSize="12sp"
                 android:visibility="gone"
                 tools:visibility="visible" />
+
+            </LinearLayout>
 
             <TextView
                 android:layout_width="match_parent"
