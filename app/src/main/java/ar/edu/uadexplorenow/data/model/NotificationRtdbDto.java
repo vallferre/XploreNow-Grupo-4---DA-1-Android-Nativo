@@ -4,9 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import ar.edu.uadexplorenow.domain.NotificationItem;
-
-import java.util.Locale;
-
 public class NotificationRtdbDto {
     @Nullable public String id;
     @Nullable public String title;
@@ -57,7 +54,7 @@ public class NotificationRtdbDto {
                 safeTitle.isEmpty() ? "Notificacion" : safeTitle,
                 safeMessage,
                 firstNonBlank(type),
-                rawSourceType.toLowerCase(Locale.ROOT),
+                NotificationItem.normalizeSourceType(rawSourceType),
                 rawSourceId,
                 firstNonBlank(imageUrl, image_url),
                 firstNonBlank(createdAt, created_at),

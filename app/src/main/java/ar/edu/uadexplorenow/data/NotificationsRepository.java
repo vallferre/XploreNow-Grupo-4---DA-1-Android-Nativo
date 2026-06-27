@@ -113,8 +113,7 @@ public final class NotificationsRepository {
         try {
             List<NotificationItem> items = parseNotifications(response.body());
             sortNewestFirst(items);
-            cachedNotificationDao.deleteByUid(uid);
-            cachedNotificationDao.insertAll(CachedNotificationEntity.fromList(uid, items));
+            replaceCache(uid, items);
             return items;
         } catch (RuntimeException e) {
             throw new IOException("No se pudieron parsear las notificaciones", e);
@@ -123,7 +122,12 @@ public final class NotificationsRepository {
 
     @NonNull
     public List<NotificationItem> loadCachedBlocking(@NonNull String uid) {
-        return CachedNotificationEntity.toList(cachedNotificationDao.getAllByUid(uid));
+        try {
+            return CachedNotificationEntity.toList(cachedNotificationDao.getAllByUid(uid));
+        } catch (RuntimeException e) {
+            Log.e(TAG, "No se pudo leer el cache de notificaciones", e);
+            return Collections.emptyList();
+        }
     }
 
     public void markRead(@NonNull String uid, @NonNull NotificationItem item, @NonNull VoidCallback callback) {
@@ -186,18 +190,31 @@ public final class NotificationsRepository {
     }
 
     private void saveToCache(@NonNull String uid, @NonNull List<NotificationItem> items) {
-        List<CachedNotificationEntity> entities = CachedNotificationEntity.fromList(uid, items);
+        List<NotificationItem> snapshot = new ArrayList<>(items);
         cacheExecutor.execute(() -> {
-            cachedNotificationDao.deleteByUid(uid);
-            cachedNotificationDao.insertAll(entities);
+            try {
+                replaceCache(uid, snapshot);
+            } catch (RuntimeException e) {
+                Log.e(TAG, "No se pudo guardar el cache de notificaciones", e);
+            }
         });
+    }
+
+    private void replaceCache(@NonNull String uid, @NonNull List<NotificationItem> items) {
+        cachedNotificationDao.deleteByUid(uid);
+        cachedNotificationDao.insertAll(CachedNotificationEntity.fromList(uid, items));
     }
 
     private void loadFromCache(@NonNull String uid, @NonNull NotificationsCallback callback) {
         cacheExecutor.execute(() -> {
-            List<NotificationItem> cached = CachedNotificationEntity.toList(cachedNotificationDao.getAllByUid(uid));
-            sortNewestFirst(cached);
-            mainHandler.post(() -> callback.onResult(cached, true));
+            try {
+                List<NotificationItem> cached = CachedNotificationEntity.toList(cachedNotificationDao.getAllByUid(uid));
+                sortNewestFirst(cached);
+                mainHandler.post(() -> callback.onResult(cached, true));
+            } catch (RuntimeException e) {
+                Log.e(TAG, "No se pudo leer el cache de notificaciones", e);
+                mainHandler.post(() -> callback.onResult(Collections.emptyList(), true));
+            }
         });
     }
 
