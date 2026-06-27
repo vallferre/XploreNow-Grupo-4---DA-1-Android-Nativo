@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
     implementation(libs.biometric)
+    implementation(libs.work.runtime)
     implementation("androidx.hilt:hilt-navigation-fragment:1.2.0")
     implementation("com.google.android.gms:play-services-maps:19.2.0")
     implementation("androidx.room:room-runtime:2.6.1")

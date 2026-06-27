@@ -34,6 +34,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.FavoritesRepository;
+import ar.edu.uadexplorenow.data.NotificationsRepository;
 import ar.edu.uadexplorenow.data.local.cache.UserProfileFileCache;
 import ar.edu.uadexplorenow.data.local.db.CachedActivityDao;
 import ar.edu.uadexplorenow.data.local.db.CachedActivityEntity;
@@ -90,6 +91,8 @@ public class ExploreFragment extends Fragment {
     @Inject
     FavoritesRepository favoritesRepository;
     @Inject
+    NotificationsRepository notificationsRepository;
+    @Inject
     CachedActivityDao cachedActivityDao;
     @Inject
     UserProfileFileCache userProfileFileCache;
@@ -125,6 +128,8 @@ public class ExploreFragment extends Fragment {
     private BottomNavigationView bottomNav;
     private NestedScrollView scrollContent;
     private ImageButton btnProfile;
+    private ImageButton btnNotifications;
+    private TextView tvNotificationsBadge;
 
     private final FeaturedActivitiesAdapter featuredAdapter = new FeaturedActivitiesAdapter();
     private final NewsAdapter newsAdapter = new NewsAdapter();
@@ -175,6 +180,8 @@ public class ExploreFragment extends Fragment {
         tvEmpty = view.findViewById(R.id.tvEmpty);
         bottomNav = view.findViewById(R.id.bottomNav);
         btnProfile = view.findViewById(R.id.btnProfile);
+        btnNotifications = view.findViewById(R.id.btnNotifications);
+        tvNotificationsBadge = view.findViewById(R.id.tvNotificationsBadge);
         ImageButton btnFilter = view.findViewById(R.id.btnFilter);
 
         rvNews.setLayoutManager(
@@ -219,6 +226,10 @@ public class ExploreFragment extends Fragment {
         btnFilter.setOnClickListener(v -> showFilterBottomSheet());
 
         btnProfile.setOnClickListener(v -> navigateToProfile(view));
+        if (btnNotifications != null) {
+            btnNotifications.setOnClickListener(v -> Navigation.findNavController(view)
+                    .navigate(R.id.action_exploreFragment_to_notificationsFragment));
+        }
 
         bottomNav.setSelectedItemId(R.id.nav_home);
         bottomNav.setOnItemSelectedListener(item -> {
@@ -258,9 +269,19 @@ public class ExploreFragment extends Fragment {
         if (FirebaseAuth.getInstance().getCurrentUser() != null && !effectiveUid.isEmpty()) {
             loadFavoritesFromServer();
             loadActivities();
+            updateNotificationsBadge();
         }
     }
 
+
+    private void updateNotificationsBadge() {
+        if (notificationsRepository == null || tvNotificationsBadge == null || effectiveUid.isEmpty()) return;
+        notificationsRepository.unreadCount(effectiveUid, count -> {
+            if (!isAdded() || tvNotificationsBadge == null) return;
+            tvNotificationsBadge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+            tvNotificationsBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+        });
+    }
     private void loadFavoritesFromServer() {
         favoritesRepository.loadAll(effectiveUid, map -> {
             if (!isAdded()) return;

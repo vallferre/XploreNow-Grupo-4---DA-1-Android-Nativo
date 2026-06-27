@@ -13,9 +13,10 @@ import androidx.room.RoomDatabase;
  *
  * Incrementar version al agregar entidades o modificar columnas.
  */
-@Database(entities = {CachedActivityEntity.class, CachedReservationEntity.class, CachedFavoriteEntity.class}, version = 5, exportSchema = false)
+@Database(entities = {CachedActivityEntity.class, CachedReservationEntity.class, CachedFavoriteEntity.class, CachedNotificationEntity.class}, version = 6, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract CachedActivityDao cachedActivityDao();
     public abstract CachedReservationDao cachedReservationDao();
     public abstract CachedFavoriteDao cachedFavoriteDao();
+    public abstract CachedNotificationDao cachedNotificationDao();
 }
