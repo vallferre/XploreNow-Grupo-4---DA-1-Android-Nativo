@@ -107,6 +107,18 @@ public class CachedReservationEntity {
     @ColumnInfo(name = "cancellation_free_hours")
     public long cancellationFreeHours = 0;
 
+    @ColumnInfo(name = "slot_id")
+    public String slotId = "";
+
+    @ColumnInfo(name = "check_in_status")
+    public String checkInStatus = ReservationItem.CHECK_IN_PENDING;
+
+    @ColumnInfo(name = "checked_in_at_value")
+    public String checkedInAtValue = "";
+
+    @ColumnInfo(name = "check_in_message")
+    public String checkInMessage = "";
+
     public ReservationItem toDomain() {
         return ReservationItem.fromCache(
                 reservationId, activityId, activityName, destination, guideName, category,
@@ -114,7 +126,7 @@ public class CachedReservationEntity {
                 selectedTimeLabel, imageUrl, meetingPoint, userRating, activityRating,
                 guideRating, reviewComment, finishedAtValue, ratedAtValue, pricePerPerson,
                 totalPrice, currency, description, cancellationType, cancellationDescription,
-                cancellationFreeHours
+                cancellationFreeHours, slotId, checkInStatus, checkedInAtValue, checkInMessage
         );
     }
 
@@ -148,6 +160,10 @@ public class CachedReservationEntity {
         e.cancellationType = item.cancellationType;
         e.cancellationDescription = item.cancellationDescription;
         e.cancellationFreeHours = item.cancellationFreeHours;
+        e.slotId = item.slotId;
+        e.checkInStatus = item.checkInStatus;
+        e.checkedInAtValue = item.checkedInAtValue;
+        e.checkInMessage = item.checkInMessage;
         return e;
     }
 

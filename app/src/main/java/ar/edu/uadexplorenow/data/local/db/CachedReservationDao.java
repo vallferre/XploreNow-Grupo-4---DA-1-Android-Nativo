@@ -33,6 +33,9 @@ public interface CachedReservationDao {
     @Query("UPDATE cached_reservations SET user_rating = :userRating, activity_rating = :activityRating, guide_rating = :guideRating, review_comment = :reviewComment, rated_at_value = :ratedAtValue WHERE reservation_id = :reservationId")
     void updateReview(String reservationId, @Nullable Double userRating, @Nullable Double activityRating, @Nullable Double guideRating, String reviewComment, String ratedAtValue);
 
+    @Query("UPDATE cached_reservations SET check_in_status = :checkInStatus, checked_in_at_value = :checkedInAtValue, check_in_message = :checkInMessage WHERE reservation_id = :reservationId")
+    void updateCheckIn(String reservationId, String checkInStatus, String checkedInAtValue, String checkInMessage);
+
     @Query("DELETE FROM cached_reservations WHERE uid = :uid")
     void deleteByUid(String uid);
 }
