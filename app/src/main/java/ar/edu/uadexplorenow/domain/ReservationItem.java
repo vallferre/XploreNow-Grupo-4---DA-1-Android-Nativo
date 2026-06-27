@@ -29,7 +29,14 @@ public final class ReservationItem {
     private static final DateTimeFormatter DATE_LONG = DateTimeFormatter.ofPattern("dd MMM yyyy 'a las' HH:mm", LOCALE);
     private static final DateTimeFormatter TIME_ONLY = DateTimeFormatter.ofPattern("HH:mm", LOCALE);
     private static final long REVIEW_WINDOW_MILLIS = 48L * 60L * 60L * 1000L;
-    public final String reservationId, activityId, activityName, destination, guideName, category, status, scheduledAtValue, selectedDateLabel, selectedTimeLabel, imageUrl, meetingPoint, reviewComment, finishedAtValue, ratedAtValue, currency, description, cancellationType, cancellationDescription;
+    public static final String CHECK_IN_PENDING = "pending";
+    public static final String CHECK_IN_CONFIRMED = "confirmed";
+    public static final String CHECK_IN_INVALID = "invalid";
+
+    public final String reservationId, activityId, activityName, destination, guideName, category, status,
+            scheduledAtValue, selectedDateLabel, selectedTimeLabel, imageUrl, meetingPoint, reviewComment,
+            finishedAtValue, ratedAtValue, currency, description, cancellationType,
+            cancellationDescription, slotId, checkInStatus, checkedInAtValue, checkInMessage;
     public final long durationMinutes, cancellationFreeHours;
     public final int participants;
     public final double pricePerPerson, totalPrice;
@@ -38,55 +45,248 @@ public final class ReservationItem {
     @Nullable private final LocalDate localDate;
     private final String normalizedSearchIndex;
 
-    private ReservationItem(@NonNull String reservationId,@NonNull String activityId,@NonNull String activityName,@NonNull String destination,@NonNull String guideName,@NonNull String category,long durationMinutes,int participants,@NonNull String status,@NonNull String scheduledAtValue,@NonNull String selectedDateLabel,@NonNull String selectedTimeLabel,@NonNull String imageUrl,@NonNull String meetingPoint,@Nullable Double userRating,@Nullable Double activityRating,@Nullable Double guideRating,@NonNull String reviewComment,@NonNull String finishedAtValue,@NonNull String ratedAtValue,double pricePerPerson,double totalPrice,@NonNull String currency,@NonNull String description,@NonNull String cancellationType,@NonNull String cancellationDescription,long cancellationFreeHours,long sortEpochMillis,@Nullable LocalDate localDate) {
-        this.reservationId = reservationId; this.activityId = activityId; this.activityName = activityName; this.destination = destination; this.guideName = guideName; this.category = category; this.durationMinutes = durationMinutes; this.participants = participants; this.status = ReservationStatus.normalize(status); this.scheduledAtValue = scheduledAtValue; this.selectedDateLabel = selectedDateLabel; this.selectedTimeLabel = selectedTimeLabel; this.imageUrl = imageUrl; this.meetingPoint = meetingPoint; this.userRating = userRating; this.activityRating = activityRating; this.guideRating = guideRating; this.reviewComment = reviewComment; this.finishedAtValue = finishedAtValue; this.ratedAtValue = ratedAtValue; this.pricePerPerson = pricePerPerson; this.totalPrice = totalPrice; this.currency = currency; this.description = description; this.cancellationType = cancellationType; this.cancellationDescription = cancellationDescription; this.cancellationFreeHours = cancellationFreeHours; this.sortEpochMillis = sortEpochMillis; this.localDate = localDate;
-        this.normalizedSearchIndex = normalizeForSearch(activityName + " " + destination + " " + guideName + " " + category + " " + selectedDateLabel + " " + selectedTimeLabel + " " + ReservationStatus.label(status) + " " + reviewComment);
+    private ReservationItem(
+            @NonNull String reservationId,
+            @NonNull String activityId,
+            @NonNull String activityName,
+            @NonNull String destination,
+            @NonNull String guideName,
+            @NonNull String category,
+            long durationMinutes,
+            int participants,
+            @NonNull String status,
+            @NonNull String scheduledAtValue,
+            @NonNull String selectedDateLabel,
+            @NonNull String selectedTimeLabel,
+            @NonNull String imageUrl,
+            @NonNull String meetingPoint,
+            @Nullable Double userRating,
+            @Nullable Double activityRating,
+            @Nullable Double guideRating,
+            @NonNull String reviewComment,
+            @NonNull String finishedAtValue,
+            @NonNull String ratedAtValue,
+            double pricePerPerson,
+            double totalPrice,
+            @NonNull String currency,
+            @NonNull String description,
+            @NonNull String cancellationType,
+            @NonNull String cancellationDescription,
+            long cancellationFreeHours,
+            @NonNull String slotId,
+            @NonNull String checkInStatus,
+            @NonNull String checkedInAtValue,
+            @NonNull String checkInMessage,
+            long sortEpochMillis,
+            @Nullable LocalDate localDate
+    ) {
+        this.reservationId = reservationId;
+        this.activityId = activityId;
+        this.activityName = activityName;
+        this.destination = destination;
+        this.guideName = guideName;
+        this.category = category;
+        this.durationMinutes = durationMinutes;
+        this.participants = participants;
+        this.status = ReservationStatus.normalize(status);
+        this.scheduledAtValue = scheduledAtValue;
+        this.selectedDateLabel = selectedDateLabel;
+        this.selectedTimeLabel = selectedTimeLabel;
+        this.imageUrl = imageUrl;
+        this.meetingPoint = meetingPoint;
+        this.userRating = userRating;
+        this.activityRating = activityRating;
+        this.guideRating = guideRating;
+        this.reviewComment = reviewComment;
+        this.finishedAtValue = finishedAtValue;
+        this.ratedAtValue = ratedAtValue;
+        this.pricePerPerson = pricePerPerson;
+        this.totalPrice = totalPrice;
+        this.currency = currency;
+        this.description = description;
+        this.cancellationType = cancellationType;
+        this.cancellationDescription = cancellationDescription;
+        this.cancellationFreeHours = cancellationFreeHours;
+        this.slotId = slotId;
+        this.checkInStatus = normalizeCheckInStatus(checkInStatus);
+        this.checkedInAtValue = checkedInAtValue;
+        this.checkInMessage = checkInMessage;
+        this.sortEpochMillis = sortEpochMillis;
+        this.localDate = localDate;
+        this.normalizedSearchIndex = normalizeForSearch(
+                activityName + " " + destination + " " + guideName + " " + category + " "
+                        + selectedDateLabel + " " + selectedTimeLabel + " "
+                        + ReservationStatus.label(status) + " " + reviewComment);
     }
 
     @NonNull
-    public static ReservationItem fromCache(@NonNull String reservationId,@NonNull String activityId,@NonNull String activityName,@NonNull String destination,@NonNull String guideName,@NonNull String category,long durationMinutes,int participants,@NonNull String status,@NonNull String scheduledAtValue,@NonNull String selectedDateLabel,@NonNull String selectedTimeLabel,@NonNull String imageUrl,@NonNull String meetingPoint,@Nullable Double userRating,@Nullable Double activityRating,@Nullable Double guideRating,@NonNull String reviewComment,@NonNull String finishedAtValue,@NonNull String ratedAtValue,double pricePerPerson,double totalPrice,@NonNull String currency,@NonNull String description,@NonNull String cancellationType,@NonNull String cancellationDescription,long cancellationFreeHours) {
+    public static ReservationItem fromCache(
+            @NonNull String reservationId,
+            @NonNull String activityId,
+            @NonNull String activityName,
+            @NonNull String destination,
+            @NonNull String guideName,
+            @NonNull String category,
+            long durationMinutes,
+            int participants,
+            @NonNull String status,
+            @NonNull String scheduledAtValue,
+            @NonNull String selectedDateLabel,
+            @NonNull String selectedTimeLabel,
+            @NonNull String imageUrl,
+            @NonNull String meetingPoint,
+            @Nullable Double userRating,
+            @Nullable Double activityRating,
+            @Nullable Double guideRating,
+            @NonNull String reviewComment,
+            @NonNull String finishedAtValue,
+            @NonNull String ratedAtValue,
+            double pricePerPerson,
+            double totalPrice,
+            @NonNull String currency,
+            @NonNull String description,
+            @NonNull String cancellationType,
+            @NonNull String cancellationDescription,
+            long cancellationFreeHours
+    ) {
+        return fromCache(
+                reservationId, activityId, activityName, destination, guideName, category,
+                durationMinutes, participants, status, scheduledAtValue, selectedDateLabel,
+                selectedTimeLabel, imageUrl, meetingPoint, userRating, activityRating,
+                guideRating, reviewComment, finishedAtValue, ratedAtValue, pricePerPerson,
+                totalPrice, currency, description, cancellationType, cancellationDescription,
+                cancellationFreeHours, "", CHECK_IN_PENDING, "", "");
+    }
+
+    @NonNull
+    public static ReservationItem fromCache(
+            @NonNull String reservationId,
+            @NonNull String activityId,
+            @NonNull String activityName,
+            @NonNull String destination,
+            @NonNull String guideName,
+            @NonNull String category,
+            long durationMinutes,
+            int participants,
+            @NonNull String status,
+            @NonNull String scheduledAtValue,
+            @NonNull String selectedDateLabel,
+            @NonNull String selectedTimeLabel,
+            @NonNull String imageUrl,
+            @NonNull String meetingPoint,
+            @Nullable Double userRating,
+            @Nullable Double activityRating,
+            @Nullable Double guideRating,
+            @NonNull String reviewComment,
+            @NonNull String finishedAtValue,
+            @NonNull String ratedAtValue,
+            double pricePerPerson,
+            double totalPrice,
+            @NonNull String currency,
+            @NonNull String description,
+            @NonNull String cancellationType,
+            @NonNull String cancellationDescription,
+            long cancellationFreeHours,
+            @NonNull String slotId,
+            @NonNull String checkInStatus,
+            @NonNull String checkedInAtValue,
+            @NonNull String checkInMessage
+    ) {
         DateInfo dateInfo = resolveDateInfo(scheduledAtValue);
-        return new ReservationItem(reservationId, activityId, activityName, destination, guideName, category, durationMinutes, participants, status, scheduledAtValue, selectedDateLabel, selectedTimeLabel, imageUrl, meetingPoint, userRating, activityRating, guideRating, reviewComment, finishedAtValue, ratedAtValue, pricePerPerson, totalPrice, currency, description, cancellationType, cancellationDescription, cancellationFreeHours, dateInfo.epochMillis, dateInfo.localDate);
+        return new ReservationItem(
+                reservationId, activityId, activityName, destination, guideName, category,
+                durationMinutes, participants, status, scheduledAtValue, selectedDateLabel,
+                selectedTimeLabel, imageUrl, meetingPoint, userRating, activityRating,
+                guideRating, reviewComment, finishedAtValue, ratedAtValue, pricePerPerson,
+                totalPrice, currency, description, cancellationType, cancellationDescription,
+                cancellationFreeHours, slotId, checkInStatus, checkedInAtValue, checkInMessage,
+                dateInfo.epochMillis, dateInfo.localDate);
     }
 
     @NonNull
-    public static List<ReservationItem> buildList(@Nullable UserRtdbDto user,@NonNull Map<String, ActivityDetail> detailById) {
+    public static List<ReservationItem> buildList(
+            @Nullable UserRtdbDto user,
+            @NonNull Map<String, ActivityDetail> detailById
+    ) {
         List<ReservationItem> out = new ArrayList<>();
-        if (user != null) parseReservationRoots(user.reservations, detailById, out);
-        if (!out.isEmpty()) { sort(out); return out; }
+        if (user != null) {
+            parseReservationRoots(user.reservations, detailById, out);
+        }
+        if (!out.isEmpty()) {
+            sort(out);
+            return out;
+        }
         List<ActivityHistoryItem> legacy = ActivityHistoryItem.buildHistory(user, detailById);
         for (ActivityHistoryItem item : legacy) {
             DateInfo dateInfo = resolveDateInfo(item.activityDateValue);
-            out.add(new ReservationItem(item.recordKey, item.activityId, item.name, item.destination, item.guideName, item.category, item.durationMinutes, 1, ReservationStatus.FINISHED, item.activityDateValue, item.formattedDateShort(), "", item.imageUrl, "", null, null, null, "", "", "", 0, 0, "", "", "", "", 0, dateInfo.epochMillis, dateInfo.localDate));
+            out.add(new ReservationItem(
+                    item.recordKey, item.activityId, item.name, item.destination,
+                    item.guideName, item.category, item.durationMinutes, 1,
+                    ReservationStatus.FINISHED, item.activityDateValue,
+                    item.formattedDateShort(), "", item.imageUrl, "", null, null,
+                    null, "", "", "", 0, 0, "", "", "", "", 0,
+                    "", CHECK_IN_PENDING, "", "", dateInfo.epochMillis,
+                    dateInfo.localDate));
         }
-        sort(out); return out;
+        sort(out);
+        return out;
     }
 
-    private static void sort(@NonNull List<ReservationItem> items) { items.sort(Comparator.comparingLong(ReservationItem::sortEpochMillis).reversed().thenComparing(item -> item.activityName.toLowerCase(Locale.ROOT))); }
-    private static long sortEpochMillis(@NonNull ReservationItem item) { return item.sortEpochMillis; }
+    private static void sort(@NonNull List<ReservationItem> items) {
+        items.sort(Comparator.comparingLong(ReservationItem::sortEpochMillis)
+                .reversed()
+                .thenComparing(item -> item.activityName.toLowerCase(Locale.ROOT)));
+    }
 
-    private static void parseReservationRoots(@Nullable JsonElement raw,@NonNull Map<String, ActivityDetail> detailById,@NonNull List<ReservationItem> out) {
+    private static long sortEpochMillis(@NonNull ReservationItem item) {
+        return item.sortEpochMillis;
+    }
+
+    private static void parseReservationRoots(
+            @Nullable JsonElement raw,
+            @NonNull Map<String, ActivityDetail> detailById,
+            @NonNull List<ReservationItem> out
+    ) {
         if (raw == null || raw.isJsonNull()) return;
         if (raw.isJsonObject()) {
             JsonObject obj = raw.getAsJsonObject();
-            for (String key : obj.keySet()) { ReservationItem item = fromJson(obj.get(key), key, detailById); if (item != null) out.add(item); }
+            for (String key : obj.keySet()) {
+                ReservationItem item = fromJson(obj.get(key), key, detailById);
+                if (item != null) out.add(item);
+            }
             return;
         }
         if (raw.isJsonArray()) {
             JsonArray array = raw.getAsJsonArray();
-            for (int i = 0; i < array.size(); i++) { ReservationItem item = fromJson(array.get(i), "reservation_" + i, detailById); if (item != null) out.add(item); }
+            for (int i = 0; i < array.size(); i++) {
+                ReservationItem item = fromJson(array.get(i), "reservation_" + i, detailById);
+                if (item != null) out.add(item);
+            }
         }
     }
 
     @Nullable
-    private static ReservationItem fromJson(@Nullable JsonElement raw,@NonNull String fallbackId,@NonNull Map<String, ActivityDetail> detailById) {
+    private static ReservationItem fromJson(
+            @Nullable JsonElement raw,
+            @NonNull String fallbackId,
+            @NonNull Map<String, ActivityDetail> detailById
+    ) {
         if (raw == null || raw.isJsonNull() || !raw.isJsonObject()) return null;
         JsonObject obj = raw.getAsJsonObject();
-        String reservationId = firstNonBlank(stringOrNumber(obj, "id"), stringOrNumber(obj, "reservation_id"), stringOrNumber(obj, "reservationId"), fallbackId);
+        String reservationId = firstNonBlank(
+                stringOrNumber(obj, "id"),
+                stringOrNumber(obj, "reservation_id"),
+                stringOrNumber(obj, "reservationId"),
+                fallbackId);
         String activityId = firstNonBlank(stringOrNumber(obj, "activity_id"), stringOrNumber(obj, "activityId"));
         ActivityDetail detail = !activityId.isEmpty() ? detailById.get(activityId) : null;
-        String activityName = firstNonBlank(stringOrNumber(obj, "activity_name"), stringOrNumber(obj, "activityName"), stringOrNumber(obj, "name"), detail != null ? detail.name : null);
+        String activityName = firstNonBlank(
+                stringOrNumber(obj, "activity_name"),
+                stringOrNumber(obj, "activityName"),
+                stringOrNumber(obj, "name"),
+                detail != null ? detail.name : null);
         if (activityName.isEmpty()) return null;
+
         String destination = firstNonBlank(stringOrNumber(obj, "destination"), detail != null ? detail.destination : null);
         String guideName = firstNonBlank(stringOrNumber(obj, "guide_name"), stringOrNumber(obj, "guideName"), detail != null ? detail.guideName : null);
         String category = firstNonBlank(stringOrNumber(obj, "category"), detail != null ? detail.category : null);
@@ -97,6 +297,7 @@ public final class ReservationItem {
         DateInfo dateInfo = resolveDateInfo(scheduledAt);
         String selectedDate = normalizeDateLabel(firstNonBlank(stringOrNumber(obj, "selected_date"), stringOrNumber(obj, "selectedDate")), dateInfo);
         String selectedTime = normalizeTimeLabel(firstNonBlank(stringOrNumber(obj, "selected_time"), stringOrNumber(obj, "selectedTime")), dateInfo);
+        String slotId = firstNonBlank(stringOrNumber(obj, "slot_id"), stringOrNumber(obj, "slotId"));
         String imageUrl = firstNonBlank(stringOrNumber(obj, "image_url"), stringOrNumber(obj, "imageUrl"), detail != null && !detail.imageUrls.isEmpty() ? detail.imageUrls.get(0) : null);
         String meetingPoint = firstNonBlank(stringOrNumber(obj, "meeting_point"), stringOrNumber(obj, "meetingPoint"), detail != null ? detail.meetingPoint : null);
         double activityRatingValue = firstDouble(doubleValue(obj, "activity_rating"), doubleValue(obj, "activityRating"), doubleValue(obj, "user_rating"), doubleValue(obj, "userRating"), doubleValue(obj, "rating"), -1d);
@@ -116,17 +317,30 @@ public final class ReservationItem {
         String cancellationType = firstNonBlank(policyObj != null ? stringOrNumber(policyObj, "type") : null, policy != null ? policy.type : null);
         String cancellationDescription = firstNonBlank(policyObj != null ? stringOrNumber(policyObj, "description") : null, policy != null ? policy.description : null);
         long cancellationFreeHours = firstLong(policyObj != null ? longValue(policyObj, "free_cancel_hours") : null, policyObj != null ? longValue(policyObj, "freeCancelHours") : null, policy != null ? policy.freeCancelHours : null, 0L);
-        return new ReservationItem(reservationId, activityId, activityName, destination, guideName, category, durationMinutes, Math.max(1, participants), status, scheduledAt, selectedDate, selectedTime, imageUrl, meetingPoint, userRating, activityRating, guideRating, reviewComment, finishedAtValue, ratedAtValue, pricePerPerson, totalPrice, currency, description, cancellationType, cancellationDescription, cancellationFreeHours, dateInfo.epochMillis, dateInfo.localDate);
+        String checkInStatus = firstNonBlank(stringOrNumber(obj, "check_in_status"), stringOrNumber(obj, "checkInStatus"), stringOrNumber(obj, "attendance_status"), CHECK_IN_PENDING);
+        String checkedInAtValue = firstNonBlank(stringOrNumber(obj, "checked_in_at"), stringOrNumber(obj, "checkedInAt"));
+        String checkInMessage = firstNonBlank(stringOrNumber(obj, "check_in_message"), stringOrNumber(obj, "checkInMessage"));
+        return new ReservationItem(
+                reservationId, activityId, activityName, destination, guideName, category,
+                durationMinutes, Math.max(1, participants), status, scheduledAt,
+                selectedDate, selectedTime, imageUrl, meetingPoint, userRating,
+                activityRating, guideRating, reviewComment, finishedAtValue, ratedAtValue,
+                pricePerPerson, totalPrice, currency, description, cancellationType,
+                cancellationDescription, cancellationFreeHours, slotId, checkInStatus,
+                checkedInAtValue, checkInMessage, dateInfo.epochMillis, dateInfo.localDate);
     }
 
     @Nullable
-    private static JsonObject nestedObject(@NonNull JsonObject obj,@NonNull String... keys) {
-        for (String key : keys) { JsonElement value = obj.get(key); if (value != null && value.isJsonObject()) return value.getAsJsonObject(); }
+    private static JsonObject nestedObject(@NonNull JsonObject obj, @NonNull String... keys) {
+        for (String key : keys) {
+            JsonElement value = obj.get(key);
+            if (value != null && value.isJsonObject()) return value.getAsJsonObject();
+        }
         return null;
     }
 
     @Nullable
-    private static Double doubleValue(@NonNull JsonObject obj,@NonNull String key) {
+    private static Double doubleValue(@NonNull JsonObject obj, @NonNull String key) {
         JsonElement value = obj.get(key);
         if (value == null || value.isJsonNull()) return null;
         try {
@@ -140,7 +354,7 @@ public final class ReservationItem {
     }
 
     @Nullable
-    private static Long longValue(@NonNull JsonObject obj,@NonNull String key) {
+    private static Long longValue(@NonNull JsonObject obj, @NonNull String key) {
         JsonElement value = obj.get(key);
         if (value == null || value.isJsonNull()) return null;
         try {
@@ -154,7 +368,7 @@ public final class ReservationItem {
     }
 
     @Nullable
-    private static String stringOrNumber(@NonNull JsonObject obj,@NonNull String key) {
+    private static String stringOrNumber(@NonNull JsonObject obj, @NonNull String key) {
         JsonElement value = obj.get(key);
         if (value == null || value.isJsonNull() || !value.isJsonPrimitive()) return null;
         JsonPrimitive primitive = value.getAsJsonPrimitive();
@@ -174,6 +388,8 @@ public final class ReservationItem {
     @NonNull public String statusLabel() { return ReservationStatus.label(status); }
     public boolean canCancel() { return ReservationStatus.canCancel(status); }
     public boolean canFinish() { return ReservationStatus.canFinish(status); }
+    public boolean isCheckedIn() { return CHECK_IN_CONFIRMED.equals(checkInStatus) || !checkedInAtValue.isEmpty(); }
+    public boolean canScanQr() { return ReservationStatus.CONFIRMED.equals(status) && !isCheckedIn(); }
     public boolean hasReview() { return activityRating != null || guideRating != null || !reviewComment.isEmpty(); }
     public boolean canReviewNow() {
         if (!ReservationStatus.FINISHED.equals(status) || hasReview()) return false;
@@ -197,13 +413,14 @@ public final class ReservationItem {
         DateInfo info = resolveDateInfo(scheduledAtValue);
         return info.zonedDateTime == null ? (selectedDateLabel.isEmpty() ? scheduledAtValue : selectedDateLabel) : info.zonedDateTime.format(DATE_LONG);
     }
-    @NonNull public String formattedScheduleCompact() { String preferred = composeSelectedDateTimeLabel(); if (!preferred.isEmpty()) return preferred; String date = formattedDateShort(); return selectedTimeLabel.isEmpty() ? date : date + " · " + selectedTimeLabel; }
+    @NonNull public String formattedScheduleCompact() { String preferred = composeSelectedDateTimeLabel(); if (!preferred.isEmpty()) return preferred; String date = formattedDateShort(); return selectedTimeLabel.isEmpty() ? date : date + " - " + selectedTimeLabel; }
     @NonNull public String participantsLabel() { return participants == 1 ? "1 participante" : participants + " participantes"; }
     @NonNull public String guideLabel() { return guideName.isEmpty() ? "Guia no informada" : "Guia: " + guideName; }
+    @NonNull public String voucherCheckInLabel() { return isCheckedIn() ? "Asistencia confirmada" : "Pendiente de check-in"; }
     @NonNull public String ratingLabel() { return userRating == null ? "Sin calificacion" : String.format(LOCALE, "%.1f/5", userRating); }
     @NonNull public String detailedRatingLabel() {
         if (activityRating == null && guideRating == null) return "Sin calificacion";
-        if (activityRating != null && guideRating != null) return String.format(LOCALE, "Actividad %.1f/5 · Guia %.1f/5", activityRating, guideRating);
+        if (activityRating != null && guideRating != null) return String.format(LOCALE, "Actividad %.1f/5 - Guia %.1f/5", activityRating, guideRating);
         if (activityRating != null) return String.format(LOCALE, "Actividad %.1f/5", activityRating);
         return String.format(LOCALE, "Guia %.1f/5", guideRating);
     }
@@ -281,8 +498,17 @@ public final class ReservationItem {
         return fallbackInfo.zonedDateTime != null ? fallbackInfo.zonedDateTime.format(TIME_ONLY) : "";
     }
 
+    @NonNull
+    private static String normalizeCheckInStatus(@Nullable String raw) {
+        String value = safe(raw).toLowerCase(Locale.ROOT);
+        if (CHECK_IN_CONFIRMED.equals(value)) return CHECK_IN_CONFIRMED;
+        if (CHECK_IN_INVALID.equals(value)) return CHECK_IN_INVALID;
+        return CHECK_IN_PENDING;
+    }
+
     private static final class DateInfo {
         final long epochMillis; @Nullable final LocalDate localDate; @Nullable final ZonedDateTime zonedDateTime;
         DateInfo(long epochMillis,@Nullable LocalDate localDate,@Nullable ZonedDateTime zonedDateTime) { this.epochMillis = epochMillis; this.localDate = localDate; this.zonedDateTime = zonedDateTime; }
     }
 }
+

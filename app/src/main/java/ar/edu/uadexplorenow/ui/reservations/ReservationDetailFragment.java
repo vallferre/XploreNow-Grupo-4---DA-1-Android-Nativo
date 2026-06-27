@@ -104,6 +104,8 @@ public class ReservationDetailFragment extends Fragment {
     @Nullable
     private MaterialButton btnReviewReservation;
     @Nullable
+    private MaterialButton btnOpenQrCheckIn;
+    @Nullable
     private MaterialButton btnOpenDirections;
     @Nullable
     private ProgressBar progress;
@@ -168,6 +170,7 @@ public class ReservationDetailFragment extends Fragment {
         btnCancelReservation = view.findViewById(R.id.btnCancelReservation);
         btnFinishReservation = view.findViewById(R.id.btnFinishReservation);
         btnReviewReservation = view.findViewById(R.id.btnReviewReservation);
+        btnOpenQrCheckIn = view.findViewById(R.id.btnOpenQrCheckIn);
         btnOpenDirections = view.findViewById(R.id.btnOpenDirections);
         meetingPointMapContainer = view.findViewById(R.id.meetingPointMapContainer);
         meetingPointMapView = view.findViewById(R.id.meetingPointMapView);
@@ -177,6 +180,11 @@ public class ReservationDetailFragment extends Fragment {
         btnCancelReservation.setOnClickListener(v -> promptCancelReservation());
         btnFinishReservation.setOnClickListener(v -> finishReservation());
         btnReviewReservation.setOnClickListener(v -> openReviewDialog());
+        btnOpenQrCheckIn.setOnClickListener(v -> openQrCheckIn());
+        getParentFragmentManager().setFragmentResultListener(
+                QrCheckInFragment.RESULT_REQUEST_KEY,
+                getViewLifecycleOwner(),
+                (requestKey, result) -> handleQrCheckInResult(result));
         loadReservation(reservationId);
     }
 
@@ -241,6 +249,7 @@ public class ReservationDetailFragment extends Fragment {
         meetingPointMapView = null;
         tvMeetingMapFallback = null;
         btnOpenDirections = null;
+        btnOpenQrCheckIn = null;
         pendingMapViewState = null;
         mapViewInitialized = false;
         super.onDestroyView();
@@ -350,6 +359,9 @@ public class ReservationDetailFragment extends Fragment {
         TextView tvDuration = requireView().findViewById(R.id.tvDuration);
         TextView tvGuide = requireView().findViewById(R.id.tvGuide);
         TextView tvTotal = requireView().findViewById(R.id.tvTotal);
+        TextView tvVoucherData = requireView().findViewById(R.id.tvVoucherData);
+        TextView tvVoucherCheckInStatus = requireView().findViewById(R.id.tvVoucherCheckInStatus);
+        TextView tvVoucherCheckInMessage = requireView().findViewById(R.id.tvVoucherCheckInMessage);
         TextView tvMeetingTitle = requireView().findViewById(R.id.tvMeetingTitle);
         View cardMeeting = requireView().findViewById(R.id.cardMeeting);
         TextView tvMeetingPoint = requireView().findViewById(R.id.tvMeetingPoint);
@@ -384,6 +396,14 @@ public class ReservationDetailFragment extends Fragment {
         tvDuration.setText(reservation.formattedDuration());
         tvGuide.setText(reservation.guideName.isEmpty() ? "-" : reservation.guideName);
         tvTotal.setText(reservation.formattedTotalPrice());
+        tvVoucherData.setText(getString(
+                R.string.reservation_voucher_data_fmt,
+                reservation.activityName,
+                reservation.formattedDateShort(),
+                reservation.selectedTimeLabel.isEmpty() ? "-" : reservation.selectedTimeLabel,
+                reservation.guideName.isEmpty() ? "-" : reservation.guideName,
+                reservation.participantsLabel()));
+        bindVoucherState(reservation, tvVoucherCheckInStatus, tvVoucherCheckInMessage);
 
         ActivityDetail activityDetail = reservation.activityId.isEmpty()
                 ? null
@@ -417,6 +437,35 @@ public class ReservationDetailFragment extends Fragment {
         bindReviewSection(reservation, tvReviewTitle, cardReview, tvReviewState, tvReviewRatings, tvReviewComment);
         updateActionButtons(reservation);
         contentRoot.setVisibility(View.VISIBLE);
+    }
+
+    private void bindVoucherState(
+            @NonNull ReservationItem reservation,
+            @NonNull TextView tvVoucherCheckInStatus,
+            @NonNull TextView tvVoucherCheckInMessage
+    ) {
+        int backgroundColor = reservation.isCheckedIn()
+                ? ContextCompat.getColor(requireContext(), R.color.detail_checkin_success_bg)
+                : ContextCompat.getColor(requireContext(), R.color.filter_primary_light);
+        int textColor = reservation.isCheckedIn()
+                ? ContextCompat.getColor(requireContext(), R.color.detail_checkin_success_text)
+                : ContextCompat.getColor(requireContext(), R.color.filter_primary);
+        tvVoucherCheckInStatus.setText(reservation.isCheckedIn()
+                ? R.string.reservation_voucher_checkin_success
+                : R.string.reservation_voucher_checkin_pending);
+        tvVoucherCheckInStatus.setBackgroundTintList(ColorStateList.valueOf(backgroundColor));
+        tvVoucherCheckInStatus.setTextColor(textColor);
+        tvVoucherCheckInMessage.setText(reservation.isCheckedIn()
+                ? (reservation.checkInMessage.isEmpty()
+                    ? getString(R.string.reservation_voucher_checkin_success)
+                    : reservation.checkInMessage)
+                : getString(R.string.reservation_voucher_checkin_message_default));
+        if (btnOpenQrCheckIn != null) {
+            btnOpenQrCheckIn.setEnabled(reservation.canScanQr());
+            btnOpenQrCheckIn.setText(reservation.isCheckedIn()
+                    ? R.string.reservation_voucher_checkin_done
+                    : R.string.reservation_voucher_checkin_button);
+        }
     }
 
     private void bindReviewSection(
@@ -1174,6 +1223,9 @@ public class ReservationDetailFragment extends Fragment {
         if (btnReviewReservation != null) {
             btnReviewReservation.setEnabled(enabled && loadedReservation != null && loadedReservation.canReviewNow());
         }
+        if (btnOpenQrCheckIn != null) {
+            btnOpenQrCheckIn.setEnabled(enabled && loadedReservation != null && loadedReservation.canScanQr());
+        }
     }
 
     private void setLoading(boolean loading) {
@@ -1192,6 +1244,65 @@ public class ReservationDetailFragment extends Fragment {
         if (btnReviewReservation != null) {
             btnReviewReservation.setEnabled(!loading);
         }
+        if (btnOpenQrCheckIn != null) {
+            btnOpenQrCheckIn.setEnabled(!loading);
+        }
+    }
+
+    private void openQrCheckIn() {
+        if (loadedReservation == null || !loadedReservation.canScanQr()) {
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putString(QrCheckInFragment.ARG_RESERVATION_ID, loadedReservation.reservationId);
+        Navigation.findNavController(requireView())
+                .navigate(R.id.action_reservationDetailFragment_to_qrCheckInFragment, args);
+    }
+
+    private void handleQrCheckInResult(@NonNull Bundle result) {
+        if (loadedReservation == null) {
+            return;
+        }
+        if (!loadedReservation.reservationId.equals(result.getString(QrCheckInFragment.RESULT_RESERVATION_ID))) {
+            return;
+        }
+        if (!result.getBoolean(QrCheckInFragment.RESULT_SUCCESS, false)) {
+            return;
+        }
+        String now = Instant.now().toString();
+        loadedReservation = ReservationItem.fromCache(
+                loadedReservation.reservationId,
+                loadedReservation.activityId,
+                loadedReservation.activityName,
+                loadedReservation.destination,
+                loadedReservation.guideName,
+                loadedReservation.category,
+                loadedReservation.durationMinutes,
+                loadedReservation.participants,
+                loadedReservation.status,
+                loadedReservation.scheduledAtValue,
+                loadedReservation.selectedDateLabel,
+                loadedReservation.selectedTimeLabel,
+                loadedReservation.imageUrl,
+                loadedReservation.meetingPoint,
+                loadedReservation.userRating,
+                loadedReservation.activityRating,
+                loadedReservation.guideRating,
+                loadedReservation.reviewComment,
+                loadedReservation.finishedAtValue,
+                loadedReservation.ratedAtValue,
+                loadedReservation.pricePerPerson,
+                loadedReservation.totalPrice,
+                loadedReservation.currency,
+                loadedReservation.description,
+                loadedReservation.cancellationType,
+                loadedReservation.cancellationDescription,
+                loadedReservation.cancellationFreeHours,
+                loadedReservation.slotId,
+                ReservationItem.CHECK_IN_CONFIRMED,
+                now,
+                result.getString(QrCheckInFragment.RESULT_MESSAGE, ""));
+        bindReservation(loadedReservation);
     }
 
     private static final class MapMarkerSpec {

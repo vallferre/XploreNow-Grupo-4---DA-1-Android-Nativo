@@ -291,6 +291,14 @@
     <string name="reservation_detail_when">Fecha y hora</string>
     <string name="reservation_detail_participants">Participantes</string>
     <string name="reservation_detail_total">Total de la reserva</string>
+    <string name="reservation_voucher_title">Voucher digital</string>
+    <string name="reservation_voucher_subtitle">Presenta este voucher al llegar y escanea el QR que te muestre tu guia.</string>
+    <string name="reservation_voucher_checkin_pending">Pendiente de check-in</string>
+    <string name="reservation_voucher_checkin_success">Asistencia confirmada</string>
+    <string name="reservation_voucher_checkin_button">Escanear QR del guia</string>
+    <string name="reservation_voucher_checkin_done">Check-in realizado</string>
+    <string name="reservation_voucher_checkin_message_default">Todavia no registraste tu asistencia para esta actividad.</string>
+    <string name="reservation_voucher_data_fmt">%1$s\n%2$s\n%3$s\nGuia: %4$s\n%5$s</string>
     <string name="reservation_detail_meeting_point_fmt">Punto de encuentro: %1$s</string>
     <string name="reservation_detail_open_directions">Abrir navegación</string>
     <string name="reservation_detail_opening_navigation">Se abrirá tu app de mapas para iniciar la navegación.</string>
@@ -309,6 +317,16 @@
     <string name="reservation_detail_cancel_success">La reserva fue cancelada y el cupo se libero correctamente.</string>
     <string name="reservation_detail_finish_success">La actividad fue marcada como finalizada.</string>
     <string name="reservation_detail_action_error">No pudimos actualizar esta reserva. Intenta nuevamente.</string>
+    <string name="reservation_qr_title">Check-in por QR</string>
+    <string name="reservation_qr_camera_hint">Alinea el QR del guia dentro del recuadro para confirmar tu asistencia.</string>
+    <string name="reservation_qr_permission_needed">Necesitamos permiso de camara para escanear el QR del guia.</string>
+    <string name="reservation_qr_permission_denied">Sin permiso de camara no podemos realizar el check-in por QR.</string>
+    <string name="reservation_qr_no_camera">Este dispositivo no tiene una camara disponible para escanear codigos QR.</string>
+    <string name="reservation_qr_retry">Reintentar escaneo</string>
+    <string name="reservation_qr_back_to_voucher">Volver al voucher</string>
+    <string name="reservation_qr_result_success_title">Asistencia confirmada</string>
+    <string name="reservation_qr_result_error_title">Error de validacion</string>
+    <string name="reservation_qr_result_success_desc">Tu presencia quedo registrada correctamente.</string>
 
     <string name="explore_offline_cache">Sin conexión — mostrando actividades guardadas</string>
     <string name="history_offline_cache">Sin conexión — mostrando reservas guardadas</string>

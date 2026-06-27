@@ -4,8 +4,10 @@ import androidx.annotation.NonNull;
 
 import android.util.Log;
 
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,6 +25,7 @@ import retrofit2.Response;
 public final class ReservationRepository {
 
     private static final String TAG = "ReservationRepository";
+    private static final String CHECK_IN_QR_PREFIX = "XPLORENOW|CHECKIN|";
 
     public interface ActionCallback {
         void onSuccess();
@@ -281,6 +284,62 @@ public final class ReservationRepository {
                 });
     }
 
+
+    public void confirmAttendanceByQr(
+            @NonNull String uid,
+            @NonNull ReservationItem reservation,
+            @NonNull String qrRawValue,
+            @NonNull ActionCallback callback
+    ) {
+        if (reservation.isCheckedIn()) {
+            callback.onSuccess();
+            return;
+        }
+        if (!reservation.canScanQr()) {
+            callback.onError("Esta reserva no esta habilitada para hacer check-in.");
+            return;
+        }
+
+        ValidationResult validationResult = validateGuideQr(reservation, qrRawValue);
+        if (!validationResult.valid) {
+            callback.onError(validationResult.message);
+            return;
+        }
+
+        String now = Instant.now().toString();
+        String successMessage = "Asistencia confirmada para " + reservation.activityName + ".";
+        Map<String, Object> updates = new LinkedHashMap<>();
+        updates.put("check_in_status", ReservationItem.CHECK_IN_CONFIRMED);
+        updates.put("checkInStatus", ReservationItem.CHECK_IN_CONFIRMED);
+        updates.put("checked_in_at", now);
+        updates.put("checkedInAt", now);
+        updates.put("check_in_message", successMessage);
+        updates.put("checkInMessage", successMessage);
+        updates.put("updated_at", now);
+
+        realtimeDatabaseApi.patchReservation(uid, reservation.reservationId, updates)
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                        if (!response.isSuccessful()) {
+                            callback.onError("No se pudo confirmar la asistencia. HTTP " + response.code());
+                            return;
+                        }
+                        updateCachedCheckIn(
+                                reservation.reservationId,
+                                ReservationItem.CHECK_IN_CONFIRMED,
+                                now,
+                                successMessage);
+                        callback.onSuccess();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                        Log.e(TAG, "Error de red al confirmar asistencia", t);
+                        callback.onError("Error de red al confirmar la asistencia.");
+                    }
+                });
+    }
     /**
      * Actualiza {@code rating} y {@code review_count} de la actividad en RTDB en base al
      * promedio acumulado de las calificaciones a la experiencia ({@code activity_rating}).
@@ -386,7 +445,11 @@ public final class ReservationRepository {
                 detail.description,
                 detail.cancellationPolicy != null ? detail.cancellationPolicy.type : "",
                 detail.cancellationPolicy != null ? detail.cancellationPolicy.description : "",
-                detail.cancellationPolicy != null ? detail.cancellationPolicy.freeCancelHours : 0
+                detail.cancellationPolicy != null ? detail.cancellationPolicy.freeCancelHours : 0,
+                slot.slotId,
+                ReservationItem.CHECK_IN_PENDING,
+                "",
+                ""
         );
         CachedReservationEntity entity = CachedReservationEntity.fromDomain(uid, item);
         new Thread(() -> cachedReservationDao.insert(entity)).start();
@@ -424,6 +487,19 @@ public final class ReservationRepository {
                 ratedAtValue)).start();
     }
 
+    private void updateCachedCheckIn(
+            @NonNull String reservationId,
+            @NonNull String checkInStatus,
+            @NonNull String checkedInAtValue,
+            @NonNull String checkInMessage
+    ) {
+        new Thread(() -> cachedReservationDao.updateCheckIn(
+                reservationId,
+                checkInStatus,
+                checkedInAtValue,
+                checkInMessage)).start();
+    }
+
     @NonNull
     private Map<String, Object> buildReservationPayload(
             @NonNull String reservationId,
@@ -453,6 +529,7 @@ public final class ReservationRepository {
         payload.put("selected_time", slot.formattedTime());
         payload.put("selectedTime", slot.formattedTime());
         payload.put("slot_id", slot.slotId);
+        payload.put("slotId", slot.slotId);
         payload.put("meeting_point", detail.meetingPoint);
         payload.put("meetingPoint", detail.meetingPoint);
         payload.put("image_url", detail.imageUrls.isEmpty() ? "" : detail.imageUrls.get(0));
@@ -467,6 +544,12 @@ public final class ReservationRepository {
         payload.put("createdAt", now);
         payload.put("updated_at", now);
         payload.put("updatedAt", now);
+        payload.put("check_in_status", ReservationItem.CHECK_IN_PENDING);
+        payload.put("checkInStatus", ReservationItem.CHECK_IN_PENDING);
+        payload.put("checked_in_at", "");
+        payload.put("checkedInAt", "");
+        payload.put("check_in_message", "");
+        payload.put("checkInMessage", "");
 
         if (detail.cancellationPolicy != null && detail.cancellationPolicy.hasContent()) {
             Map<String, Object> policy = new LinkedHashMap<>();
@@ -478,4 +561,72 @@ public final class ReservationRepository {
 
         return payload;
     }
+    @NonNull
+    private ValidationResult validateGuideQr(
+            @NonNull ReservationItem reservation,
+            @NonNull String qrRawValue
+    ) {
+        String value = qrRawValue.trim();
+        if (value.isEmpty()) {
+            return ValidationResult.error("No pudimos leer el QR del guia.");
+        }
+        if (!value.startsWith(CHECK_IN_QR_PREFIX)) {
+            return ValidationResult.error("QR invalido. Debe ser un codigo oficial de check-in.");
+        }
+
+        String[] parts = value.split("\\|", -1);
+        if (parts.length < 5) {
+            return ValidationResult.error("QR invalido. Le faltan datos para validar la asistencia.");
+        }
+
+        String activityId = parts[2].trim();
+        String slotOrDate = parts[3].trim();
+        String guideKey = normalizeGuideKey(parts[4]);
+        if (!reservation.activityId.equals(activityId)) {
+            return ValidationResult.error("Este QR corresponde a otra actividad.");
+        }
+
+        boolean sameSlot = !reservation.slotId.isEmpty() && reservation.slotId.equals(slotOrDate);
+        boolean sameSchedule = reservation.scheduledAtValue.equals(slotOrDate);
+        if (!sameSlot && !sameSchedule) {
+            return ValidationResult.error("Este QR no coincide con la fecha u horario de tu reserva.");
+        }
+
+        if (!guideKey.isEmpty()) {
+            String reservationGuideKey = normalizeGuideKey(reservation.guideName);
+            if (!reservationGuideKey.isEmpty() && !reservationGuideKey.equals(guideKey)) {
+                return ValidationResult.error("El QR no coincide con el guia asignado a esta reserva.");
+            }
+        }
+        return ValidationResult.ok();
+    }
+
+    @NonNull
+    private String normalizeGuideKey(@NonNull String raw) {
+        String normalized = Normalizer.normalize(raw.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT);
+        return normalized.replace(" ", "").replace(".", "").replace(",", "");
+    }
+
+    private static final class ValidationResult {
+        final boolean valid;
+        @NonNull final String message;
+
+        private ValidationResult(boolean valid, @NonNull String message) {
+            this.valid = valid;
+            this.message = message;
+        }
+
+        @NonNull
+        static ValidationResult ok() {
+            return new ValidationResult(true, "");
+        }
+
+        @NonNull
+        static ValidationResult error(@NonNull String message) {
+            return new ValidationResult(false, message);
+        }
+    }
 }
+

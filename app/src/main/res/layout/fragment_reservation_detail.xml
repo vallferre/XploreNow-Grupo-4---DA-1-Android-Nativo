@@ -256,6 +256,85 @@
                     tools:text="$35000" />
 
                 <TextView
+                    android:id="@+id/tvVoucherTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="@string/reservation_voucher_title"
+                    android:textColor="@color/explore_title"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardVoucher"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:cardBackgroundColor="@color/detail_info_card_bg"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/tvVoucherSubtitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/reservation_voucher_subtitle"
+                            android:textColor="@color/explore_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvVoucherData"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:lineSpacingExtra="3dp"
+                            android:textColor="@color/explore_title"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            tools:text="Caminata gastronomica&#10;13 abr 2026&#10;11:00&#10;Guia: Valentina R.&#10;2 participantes" />
+
+                        <TextView
+                            android:id="@+id/tvVoucherCheckInStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_featured_tag"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:textColor="@color/filter_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            tools:text="Pendiente de check-in" />
+
+                        <TextView
+                            android:id="@+id/tvVoucherCheckInMessage"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:textColor="@color/explore_muted"
+                            android:textSize="14sp"
+                            tools:text="Todavia no registraste tu asistencia para esta actividad." />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOpenQrCheckIn"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/reservation_voucher_checkin_button"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            app:backgroundTint="@color/filter_primary"
+                            app:cornerRadius="12dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
                     android:id="@+id/tvMeetingTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

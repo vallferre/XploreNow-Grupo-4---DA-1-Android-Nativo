@@ -206,5 +206,19 @@
             android:name="reservation_id"
             app:argType="string"
             app:nullable="false" />
+        <action
+            android:id="@+id/action_reservationDetailFragment_to_qrCheckInFragment"
+            app:destination="@id/qrCheckInFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/qrCheckInFragment"
+        android:name="ar.edu.uadexplorenow.ui.reservations.QrCheckInFragment"
+        android:label="@string/reservation_qr_title"
+        tools:layout="@layout/fragment_qr_check_in">
+        <argument
+            android:name="reservation_id"
+            app:argType="string"
+            app:nullable="false" />
     </fragment>
 </navigation>

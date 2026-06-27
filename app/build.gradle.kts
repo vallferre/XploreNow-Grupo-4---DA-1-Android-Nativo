@@ -90,6 +90,8 @@ dependencies {
     implementation(libs.work.runtime)
     implementation("androidx.hilt:hilt-navigation-fragment:1.2.0")
     implementation("com.google.android.gms:play-services-maps:19.2.0")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.5.3")
     implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
