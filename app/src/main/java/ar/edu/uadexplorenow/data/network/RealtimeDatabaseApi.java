@@ -43,7 +43,16 @@ public interface RealtimeDatabaseApi {
     @PATCH("users/{uid}.json")
     Call<Void> patchUser(@Path("uid") String uid, @Body Map<String, Object> updates);
 
-    // ── Favoritos (persistencia en RTDB) ─────────────────────────────────────
+
+    @GET("users/{uid}/notifications.json")
+    Call<JsonElement> getNotifications(@Path("uid") String uid);
+
+    @PATCH("users/{uid}/notifications/{notificationId}.json")
+    Call<Void> patchNotification(
+            @Path("uid") String uid,
+            @Path("notificationId") String notificationId,
+            @Body Map<String, Object> updates
+    );    // ── Favoritos (persistencia en RTDB) ─────────────────────────────────────
     @GET("users/{uid}/favorites.json")
     Call<JsonElement> getFavorites(@Path("uid") String uid);
 

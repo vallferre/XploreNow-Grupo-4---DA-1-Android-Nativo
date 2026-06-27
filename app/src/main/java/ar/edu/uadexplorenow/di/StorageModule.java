@@ -9,6 +9,7 @@ import javax.inject.Singleton;
 import ar.edu.uadexplorenow.data.local.db.AppDatabase;
 import ar.edu.uadexplorenow.data.local.db.CachedActivityDao;
 import ar.edu.uadexplorenow.data.local.db.CachedFavoriteDao;
+import ar.edu.uadexplorenow.data.local.db.CachedNotificationDao;
 import ar.edu.uadexplorenow.data.local.db.CachedReservationDao;
 import dagger.Module;
 import dagger.Provides;
@@ -44,5 +45,11 @@ public class StorageModule {
     @Singleton
     public CachedFavoriteDao provideCachedFavoriteDao(AppDatabase database) {
         return database.cachedFavoriteDao();
+    }
+
+    @Provides
+    @Singleton
+    public CachedNotificationDao provideCachedNotificationDao(AppDatabase database) {
+        return database.cachedNotificationDao();
     }
 }

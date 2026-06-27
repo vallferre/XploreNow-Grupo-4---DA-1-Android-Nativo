@@ -344,4 +344,13 @@
     <string name="reservation_review_star_3">3 estrellas</string>
     <string name="reservation_review_star_4">4 estrellas</string>
     <string name="reservation_review_star_5">5 estrellas</string>
+    <string name="notifications_title">Notificaciones</string>
+    <string name="notifications_subtitle">Avisos importantes sobre tus reservas, actividades favoritas y novedades.</string>
+    <string name="notifications_back">Volver</string>
+    <string name="notifications_empty">Todavia no tenes notificaciones.</string>
+    <string name="notifications_unread_count_fmt">%1$d nuevas</string>
+    <string name="notifications_source_missing">No encontramos el origen de esta notificacion.</string>
+    <string name="notifications_open">Abrir notificaciones</string>
+    <string name="notifications_channel_name">Notificaciones de XploreNow</string>
+    <string name="notifications_channel_description">Avisos de reservas, actividades y novedades.</string>
 </resources>

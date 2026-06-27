@@ -82,6 +82,9 @@
         <action
             android:id="@+id/action_exploreFragment_to_newsDetailFragment"
             app:destination="@id/newsDetailFragment" />
+        <action
+            android:id="@+id/action_exploreFragment_to_notificationsFragment"
+            app:destination="@id/notificationsFragment" />
     </fragment>
 
     <fragment
@@ -124,6 +127,34 @@
         <action
             android:id="@+id/action_activityHistoryFragment_to_favoritesFragment"
             app:destination="@id/favoritesFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/notificationsFragment"
+        android:name="ar.edu.uadexplorenow.ui.notifications.NotificationsFragment"
+        android:label="@string/notifications_title"
+        tools:layout="@layout/fragment_notifications">
+        <action
+            android:id="@+id/action_notificationsFragment_to_activityDetailFragment"
+            app:destination="@id/activityDetailFragment" />
+        <action
+            android:id="@+id/action_notificationsFragment_to_reservationDetailFragment"
+            app:destination="@id/reservationDetailFragment" />
+        <action
+            android:id="@+id/action_notificationsFragment_to_newsDetailFragment"
+            app:destination="@id/newsDetailFragment" />
+        <action
+            android:id="@+id/action_notificationsFragment_to_exploreFragment"
+            app:destination="@id/exploreFragment" />
+        <action
+            android:id="@+id/action_notificationsFragment_to_favoritesFragment"
+            app:destination="@id/favoritesFragment" />
+        <action
+            android:id="@+id/action_notificationsFragment_to_activityHistoryFragment"
+            app:destination="@id/activityHistoryFragment" />
+        <action
+            android:id="@+id/action_notificationsFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
     </fragment>
 
     <fragment
