@@ -41,7 +41,7 @@ public final class NotificationItem {
         this.title = title;
         this.message = message;
         this.type = type;
-        this.sourceType = sourceType;
+        this.sourceType = normalizeSourceType(sourceType);
         this.sourceId = sourceId;
         this.imageUrl = imageUrl;
         this.createdAt = createdAt;
@@ -81,7 +81,7 @@ public final class NotificationItem {
 
     @NonNull
     public String sourceLabel() {
-        switch (sourceType.toLowerCase(Locale.ROOT)) {
+        switch (normalizeSourceType(sourceType)) {
             case SOURCE_ACTIVITY:
                 return "Actividad";
             case SOURCE_RESERVATION:
@@ -90,6 +90,38 @@ public final class NotificationItem {
                 return "Novedad";
             default:
                 return type.trim().isEmpty() ? "XploreNow" : type.trim();
+        }
+    }
+
+    @NonNull
+    public static String normalizeSourceType(@Nullable String rawSourceType) {
+        if (rawSourceType == null) return "";
+        String normalized = rawSourceType.trim()
+                .toLowerCase(Locale.ROOT)
+                .replace('-', '_')
+                .replace(' ', '_');
+        switch (normalized) {
+            case "activity":
+            case "activities":
+            case "activity_detail":
+            case "actividad":
+            case "actividades":
+                return SOURCE_ACTIVITY;
+            case "reservation":
+            case "reservations":
+            case "reservation_detail":
+            case "booking":
+            case "bookings":
+            case "reserva":
+            case "reservas":
+                return SOURCE_RESERVATION;
+            case "news":
+            case "news_detail":
+            case "novedad":
+            case "novedades":
+                return SOURCE_NEWS;
+            default:
+                return normalized;
         }
     }
 

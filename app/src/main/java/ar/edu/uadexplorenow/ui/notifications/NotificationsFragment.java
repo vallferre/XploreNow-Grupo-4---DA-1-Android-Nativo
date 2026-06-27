@@ -90,7 +90,6 @@ public final class NotificationsFragment extends Fragment {
 
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         setupBottomNav(view);
-        loadNotifications();
     }
 
     @Override
@@ -144,7 +143,7 @@ public final class NotificationsFragment extends Fragment {
         }
         NavController navController = Navigation.findNavController(requireView());
         Bundle args = new Bundle();
-        switch (item.sourceType) {
+        switch (NotificationItem.normalizeSourceType(item.sourceType)) {
             case NotificationItem.SOURCE_ACTIVITY:
                 args.putString(ActivityDetailFragment.ARG_ACTIVITY_ID, item.sourceId);
                 navController.navigate(R.id.action_notificationsFragment_to_activityDetailFragment, args);

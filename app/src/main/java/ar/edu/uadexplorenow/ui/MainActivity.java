@@ -92,13 +92,14 @@ public class MainActivity extends AppCompatActivity {
             navController.navigate(R.id.notificationsFragment);
             return;
         }
-        if (NotificationItem.SOURCE_ACTIVITY.equals(sourceType)) {
+        String normalizedSourceType = NotificationItem.normalizeSourceType(sourceType);
+        if (NotificationItem.SOURCE_ACTIVITY.equals(normalizedSourceType)) {
             args.putString(ActivityDetailFragment.ARG_ACTIVITY_ID, sourceId);
             navController.navigate(R.id.activityDetailFragment, args);
-        } else if (NotificationItem.SOURCE_RESERVATION.equals(sourceType)) {
+        } else if (NotificationItem.SOURCE_RESERVATION.equals(normalizedSourceType)) {
             args.putString(ReservationDetailFragment.ARG_RESERVATION_ID, sourceId);
             navController.navigate(R.id.reservationDetailFragment, args);
-        } else if (NotificationItem.SOURCE_NEWS.equals(sourceType)) {
+        } else if (NotificationItem.SOURCE_NEWS.equals(normalizedSourceType)) {
             args.putString(NewsDetailFragment.ARG_NEWS_ID, sourceId);
             navController.navigate(R.id.newsDetailFragment, args);
         } else {

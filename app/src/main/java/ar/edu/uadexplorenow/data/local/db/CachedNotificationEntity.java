@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Index;
-import androidx.room.PrimaryKey;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,15 +12,14 @@ import ar.edu.uadexplorenow.domain.NotificationItem;
 
 @Entity(
         tableName = "cached_notifications",
+        primaryKeys = {"uid", "notification_id"},
         indices = {@Index(value = "uid")}
 )
 public class CachedNotificationEntity {
-
-    @PrimaryKey
     @NonNull
     @ColumnInfo(name = "notification_id")
     public String notificationId = "";
-
+    @NonNull
     @ColumnInfo(name = "uid")
     public String uid = "";
 
@@ -59,7 +57,7 @@ public class CachedNotificationEntity {
         entity.title = item.title;
         entity.message = item.message;
         entity.type = item.type;
-        entity.sourceType = item.sourceType;
+        entity.sourceType = NotificationItem.normalizeSourceType(item.sourceType);
         entity.sourceId = item.sourceId;
         entity.imageUrl = item.imageUrl;
         entity.createdAt = item.createdAt;
