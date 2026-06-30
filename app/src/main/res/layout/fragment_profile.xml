@@ -161,14 +161,6 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/profile_section_personal_help"
-                android:textColor="@color/explore_muted"
-                android:textSize="12sp" />
-
-            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
