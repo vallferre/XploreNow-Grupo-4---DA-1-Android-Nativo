@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -36,11 +37,16 @@ import androidx.navigation.Navigation;
 import javax.inject.Inject;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageMetadata;
+import com.google.firebase.storage.StorageReference;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -92,6 +98,12 @@ public class ProfileFragment extends Fragment {
     private static final String PROFILE_IMAGE_DIR = "profile_images";
     private static final String PROFILE_IMAGE_FILE_PREFIX = "profile_photo_";
     private static final String PROFILE_IMAGE_CAPTURE_SUFFIX = "_capture";
+    private static final long MAX_PROFILE_IMAGE_BYTES = 5L * 1024L * 1024L;
+
+    private interface PhotoUploadCallback {
+        void onSuccess(@NonNull String photoUrl);
+        void onFailure(@NonNull Exception error);
+    }
 
     private EditText etName;
     private EditText etEmail;
@@ -236,7 +248,15 @@ public class ProfileFragment extends Fragment {
                 if (body != null) {
                     new Thread(() -> userProfileFileCache.save(body)).start();
                 }
-                syncEmailFromAuthIfNeeded(currentUser, loadedUser);
+                boolean otpSession = SessionStore.isOtpSession(requireContext());
+                loadedUser.email = ProfileEmailChangePolicy.resolveDisplayedEmail(
+                        loadedUser.email,
+                        effectiveEmail,
+                        otpSession
+                );
+                if (!otpSession) {
+                    syncEmailFromAuthIfNeeded(currentUser, loadedUser);
+                }
                 canSaveProfile = true;
                 setLoading(false);
                 bindUser(loadedUser);
@@ -308,35 +328,302 @@ public class ProfileFragment extends Fragment {
         List<String> preferences = collectSelectedPreferences();
         List<String> legacyPreferences = new ArrayList<>(preservedLegacyPreferences);
 
-        if (!sameValue(email, currentEmail)) {
-            setLoading(true);
-            currentUser.verifyBeforeUpdateEmail(email)
-                    .addOnSuccessListener(unused -> {
-                        if (!isAdded()) return;
-                        setLoading(false);
-                        etEmail.setText(appliedCurrentEmail);
-                        Toast.makeText(
-                                requireContext(),
-                                R.string.profile_email_verification_sent,
-                                Toast.LENGTH_LONG
-                        ).show();
-                        signOutAndNavigateToLogin();
-                    })
-                    .addOnFailureListener(e -> {
-                        if (!isAdded()) return;
-                        setLoading(false);
-                        Log.e(TAG, "Email verify-before-update failed", e);
-                        Toast.makeText(
-                                requireContext(),
-                                resolveEmailUpdateErrorMessage(e),
-                                Toast.LENGTH_LONG
-                        ).show();
-                    });
-            return;
+        boolean emailChanged = !sameValue(email, currentEmail);
+        if (emailChanged) {
+            boolean otpSession = SessionStore.isOtpSession(requireContext());
+            if (!ProfileEmailChangePolicy.canRequestFirebaseEmailChange(otpSession)) {
+                String message = getString(R.string.profile_email_password_login_required);
+                etEmail.setError(message);
+                etEmail.requestFocus();
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+                return;
+            }
         }
 
         setLoading(true);
-        patchProfile(currentUser, dto, name, email, phone, photoUrl, preferences, legacyPreferences);
+        uploadProfilePhotoIfNeeded(photoUrl, new PhotoUploadCallback() {
+            @Override
+            public void onSuccess(@NonNull String persistedPhotoUrl) {
+                if (!isAdded()) return;
+                continueSavingProfile(
+                        currentUser,
+                        dto,
+                        name,
+                        appliedCurrentEmail,
+                        email,
+                        phone,
+                        persistedPhotoUrl,
+                        preferences,
+                        legacyPreferences,
+                        emailChanged
+                );
+            }
+
+            @Override
+            public void onFailure(@NonNull Exception error) {
+                if (!isAdded()) return;
+                Log.e(TAG, "Could not upload profile photo", error);
+                continueSavingProfile(
+                        currentUser,
+                        dto,
+                        name,
+                        appliedCurrentEmail,
+                        email,
+                        phone,
+                        photoUrl,
+                        preferences,
+                        legacyPreferences,
+                        emailChanged
+                );
+            }
+        });
+    }
+
+    private void continueSavingProfile(
+            @NonNull FirebaseUser currentUser,
+            @NonNull UserRtdbDto dto,
+            @NonNull String name,
+            @NonNull String currentEmail,
+            @NonNull String requestedEmail,
+            @NonNull String phone,
+            @NonNull String photoUrl,
+            @NonNull List<String> preferences,
+            @NonNull List<String> legacyPreferences,
+            boolean emailChanged
+    ) {
+        if (emailChanged) {
+            preparePendingEmailChange(
+                    currentUser,
+                    dto,
+                    name,
+                    currentEmail,
+                    requestedEmail,
+                    phone,
+                    photoUrl,
+                    preferences,
+                    legacyPreferences
+            );
+            return;
+        }
+        patchProfile(
+                currentUser,
+                dto,
+                name,
+                requestedEmail,
+                phone,
+                photoUrl,
+                preferences,
+                legacyPreferences
+        );
+    }
+
+    private void uploadProfilePhotoIfNeeded(
+            @NonNull String photoUrl,
+            @NonNull PhotoUploadCallback callback
+    ) {
+        Object photoModel = resolvePhotoModel(photoUrl);
+        if (!(photoModel instanceof File)) {
+            callback.onSuccess(photoUrl);
+            return;
+        }
+
+        File localPhoto = (File) photoModel;
+        if (!localPhoto.exists()) {
+            callback.onFailure(new IOException("Local profile photo does not exist"));
+            return;
+        }
+        if (localPhoto.length() <= 0L || localPhoto.length() >= MAX_PROFILE_IMAGE_BYTES) {
+            callback.onFailure(new IOException("Profile photo must be smaller than 5 MB"));
+            return;
+        }
+
+        FirebaseUser authenticatedUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (authenticatedUser == null) {
+            callback.onFailure(new IOException("No authenticated Firebase user for photo upload"));
+            return;
+        }
+
+        String contentType = resolveLocalImageContentType(localPhoto);
+        StorageMetadata metadata = new StorageMetadata.Builder()
+                .setContentType(contentType)
+                .build();
+        StorageReference photoReference = FirebaseStorage.getInstance()
+                .getReference()
+                .child("profile_images")
+                .child(authenticatedUser.getUid())
+                .child("avatar");
+
+        photoReference.putFile(Uri.fromFile(localPhoto), metadata)
+                .addOnSuccessListener(snapshot -> photoReference.getDownloadUrl()
+                        .addOnSuccessListener(downloadUri -> callback.onSuccess(downloadUri.toString()))
+                        .addOnFailureListener(callback::onFailure))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    @NonNull
+    private String resolveLocalImageContentType(@NonNull File localPhoto) {
+        String name = localPhoto.getName();
+        int dot = name.lastIndexOf('.');
+        if (dot >= 0 && dot < name.length() - 1) {
+            String extension = name.substring(dot + 1).toLowerCase(Locale.ROOT);
+            String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+            if (!isBlank(mimeType) && mimeType.startsWith("image/")) {
+                return mimeType;
+            }
+        }
+        return "image/jpeg";
+    }
+
+    private void preparePendingEmailChange(
+            @NonNull FirebaseUser currentUser,
+            @NonNull UserRtdbDto dto,
+            @NonNull String name,
+            @NonNull String confirmedEmail,
+            @NonNull String requestedEmail,
+            @NonNull String phone,
+            @NonNull String photoUrl,
+            @NonNull List<String> preferences,
+            @NonNull List<String> legacyPreferences
+    ) {
+        String newEmailKey = ProfileEmailChangePolicy.emailToKey(requestedEmail);
+        realtimeDatabaseApi.getUidByEmail(newEmailKey)
+                .enqueue(new Callback<String>() {
+                    @Override
+                    public void onResponse(
+                            @NonNull Call<String> call,
+                            @NonNull Response<String> response
+                    ) {
+                        if (!isAdded()) return;
+                        if (!response.isSuccessful()) {
+                            finishPendingEmailChangeWithError(R.string.profile_email_update_error);
+                            return;
+                        }
+
+                        String indexedUid = response.body();
+                        if (!ProfileEmailChangePolicy.canUseEmailIndex(indexedUid, effectiveUid)) {
+                            finishPendingEmailChangeWithError(R.string.profile_email_already_in_use);
+                            return;
+                        }
+
+                        currentUser.verifyBeforeUpdateEmail(requestedEmail)
+                                .addOnSuccessListener(unused -> {
+                                    if (!isAdded()) return;
+                                    persistProfileBeforeEmailChange(
+                                            dto,
+                                            name,
+                                            confirmedEmail,
+                                            phone,
+                                            photoUrl,
+                                            preferences,
+                                            legacyPreferences
+                                    );
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (!isAdded()) return;
+                                    Log.e(TAG, "Email verify-before-update failed", e);
+                                    setLoading(false);
+                                    Toast.makeText(
+                                            requireContext(),
+                                            resolveEmailUpdateErrorMessage(e),
+                                            Toast.LENGTH_LONG
+                                    ).show();
+                                });
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+                        if (!isAdded()) return;
+                        Log.e(TAG, "Could not validate pending email index", t);
+                        finishPendingEmailChangeWithError(R.string.profile_email_update_error);
+                    }
+                });
+    }
+
+    private void persistProfileBeforeEmailChange(
+            @NonNull UserRtdbDto dto,
+            @NonNull String name,
+            @NonNull String confirmedEmail,
+            @NonNull String phone,
+            @NonNull String photoUrl,
+            @NonNull List<String> preferences,
+            @NonNull List<String> legacyPreferences
+    ) {
+        Map<String, Object> updates = ProfileEmailChangePolicy.buildProfileUpdates(
+                effectiveUid,
+                confirmedEmail,
+                name,
+                phone,
+                photoUrl,
+                preferences,
+                legacyPreferences
+        );
+        realtimeDatabaseApi.patchUser(effectiveUid, updates)
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                        if (!isAdded()) return;
+                        if (!response.isSuccessful()) {
+                            finishPendingEmailChangeWithError(R.string.profile_save_error);
+                            return;
+                        }
+
+                        applyPersistedProfile(
+                                dto,
+                                name,
+                                confirmedEmail,
+                                phone,
+                                photoUrl,
+                                preferences,
+                                legacyPreferences
+                        );
+
+                        finishPendingEmailChangeSuccessfully();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                        if (!isAdded()) return;
+                        Log.e(TAG, "Could not persist profile before email change", t);
+                        finishPendingEmailChangeWithError(R.string.profile_save_error);
+                    }
+                });
+    }
+
+    private void applyPersistedProfile(
+            @NonNull UserRtdbDto dto,
+            @NonNull String name,
+            @NonNull String email,
+            @NonNull String phone,
+            @NonNull String photoUrl,
+            @NonNull List<String> preferences,
+            @NonNull List<String> legacyPreferences
+    ) {
+        dto.id = effectiveUid;
+        dto.email = email;
+        dto.name = name;
+        dto.phone = phone;
+        dto.photoUrl = photoUrl;
+        dto.preferences = preferences;
+        dto.legacyPreferences = legacyPreferences;
+        loadedUser = dto;
+        currentPhotoUrl = photoUrl;
+        new Thread(() -> userProfileFileCache.save(dto)).start();
+    }
+
+    private void finishPendingEmailChangeSuccessfully() {
+        if (!isAdded()) return;
+        Toast.makeText(
+                requireContext(),
+                R.string.profile_email_verification_sent,
+                Toast.LENGTH_LONG
+        ).show();
+        signOutAndNavigateToLogin();
+    }
+
+    private void finishPendingEmailChangeWithError(int messageResId) {
+        if (!isAdded()) return;
+        setLoading(false);
+        Toast.makeText(requireContext(), messageResId, Toast.LENGTH_LONG).show();
     }
 
     private void setLoading(boolean loading) {
@@ -365,16 +652,15 @@ public class ProfileFragment extends Fragment {
             @NonNull List<String> preferences,
             @NonNull List<String> legacyPreferences
     ) {
-        Map<String, Object> updates = new LinkedHashMap<>();
-        updates.put("id", effectiveUid);
-        updates.put("email", email);
-        updates.put("name", name);
-        updates.put("phone", phone);
-        updates.put("photoUrl", photoUrl);
-        updates.put("preferences", preferences);
-        if (!legacyPreferences.isEmpty()) {
-            updates.put("legacy_preferences", legacyPreferences);
-        }
+        Map<String, Object> updates = ProfileEmailChangePolicy.buildProfileUpdates(
+                effectiveUid,
+                email,
+                name,
+                phone,
+                photoUrl,
+                preferences,
+                legacyPreferences
+        );
 
         realtimeDatabaseApi.patchUser(effectiveUid, updates)
                 .enqueue(new Callback<Void>() {
@@ -386,14 +672,15 @@ public class ProfileFragment extends Fragment {
                             Toast.makeText(requireContext(), R.string.profile_save_error, Toast.LENGTH_LONG).show();
                             return;
                         }
-                        dto.id = effectiveUid;
-                        dto.email = email;
-                        dto.name = name;
-                        dto.phone = phone;
-                        dto.photoUrl = photoUrl;
-                        dto.preferences = preferences;
-                        dto.legacyPreferences = legacyPreferences;
-                        loadedUser = dto;
+                        applyPersistedProfile(
+                                dto,
+                                name,
+                                email,
+                                phone,
+                                photoUrl,
+                                preferences,
+                                legacyPreferences
+                        );
                         loadProfilePhoto(photoUrl);
                         Toast.makeText(requireContext(), R.string.profile_saved, Toast.LENGTH_SHORT).show();
                     }
@@ -440,7 +727,7 @@ public class ProfileFragment extends Fragment {
 
     private void syncEmailIndexIfNeeded(@Nullable String previousEmail, @NonNull String newEmail) {
         if (isBlank(newEmail)) return;
-        String newKey = emailToKey(newEmail);
+        String newKey = ProfileEmailChangePolicy.emailToKey(newEmail);
         realtimeDatabaseApi.putEmailIndex(newKey, effectiveUid)
                 .enqueue(new Callback<String>() {
                     @Override
@@ -464,7 +751,7 @@ public class ProfileFragment extends Fragment {
         if (isBlank(oldEmail) || sameValue(oldEmail, newEmail)) {
             return;
         }
-        realtimeDatabaseApi.deleteEmailIndex(emailToKey(oldEmail))
+        realtimeDatabaseApi.deleteEmailIndex(ProfileEmailChangePolicy.emailToKey(oldEmail))
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
@@ -478,13 +765,6 @@ public class ProfileFragment extends Fragment {
                         Log.w(TAG, "Could not delete old email index", t);
                     }
                 });
-    }
-
-    @NonNull
-    private String emailToKey(@Nullable String email) {
-        return safe(email).trim().toLowerCase(Locale.ROOT)
-                .replace("@", "_at_")
-                .replace(".", "_dot_");
     }
 
     @NonNull
@@ -789,7 +1069,7 @@ public class ProfileFragment extends Fragment {
                 return null;
             }
             File localFile = new File(path);
-            return localFile.exists() ? uri : null;
+            return localFile.exists() ? localFile : null;
         }
         return uri;
     }
@@ -811,8 +1091,16 @@ public class ProfileFragment extends Fragment {
         ivProfilePhoto.setBackground(null);
         ivProfilePhoto.setColorFilter(null);
         ivProfilePhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        Glide.with(this)
-                .load(photoModel)
+        RequestBuilder<Drawable> request = Glide.with(this).load(photoModel);
+        if (photoModel instanceof File) {
+            File localPhoto = (File) photoModel;
+            request = request.signature(new ObjectKey(
+                    localPhoto.getAbsolutePath()
+                            + ":" + localPhoto.lastModified()
+                            + ":" + localPhoto.length()
+            ));
+        }
+        request
                 .circleCrop()
                 .placeholder(R.drawable.ic_nav_person)
                 .error(R.drawable.ic_nav_person)

@@ -1,6 +1,7 @@
 package ar.edu.uadexplorenow.ui.auth;
 
 import android.os.Bundle;
+import android.util.Patterns;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +25,10 @@ import androidx.navigation.Navigation;
 import javax.inject.Inject;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
@@ -48,6 +53,7 @@ public class LoginFragment extends Fragment {
 
     private EditText     etEmail, etPassword;
     private Button       btnLogin;
+    private TextView     btnForgotPassword;
     private ProgressBar  progress;
     private FirebaseAuth mAuth;
 
@@ -67,6 +73,7 @@ public class LoginFragment extends Fragment {
         etEmail    = view.findViewById(R.id.etEmail);
         etPassword = view.findViewById(R.id.etPassword);
         btnLogin   = view.findViewById(R.id.btnLogin);
+        btnForgotPassword = view.findViewById(R.id.btnForgotPassword);
         progress   = view.findViewById(R.id.progress);
 
         ((TextView) view.findViewById(R.id.btnGoToRegister)).setOnClickListener(v ->
@@ -74,6 +81,7 @@ public class LoginFragment extends Fragment {
         ((Button) view.findViewById(R.id.btnLoginWithOtp)).setOnClickListener(v ->
                 Navigation.findNavController(view).navigate(R.id.action_login_to_otp_login));
         btnLogin.setOnClickListener(v -> attemptLogin(view));
+        btnForgotPassword.setOnClickListener(v -> requestPasswordReset());
 
         if (mAuth.getCurrentUser() != null) {
             // Sesión activa: si biometría habilitada pedir confirmación antes de pasar al home
@@ -152,6 +160,37 @@ public class LoginFragment extends Fragment {
                 });
     }
 
+    private void requestPasswordReset() {
+        String email = etEmail.getText().toString().trim();
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            etEmail.setError(getString(R.string.error_email_invalid));
+            etEmail.requestFocus();
+            return;
+        }
+
+        setLoading(true);
+        mAuth.sendPasswordResetEmail(email)
+                .addOnSuccessListener(unused -> {
+                    if (!isAdded()) return;
+                    setLoading(false);
+                    Toast.makeText(
+                            requireContext(),
+                            R.string.login_password_reset_sent,
+                            Toast.LENGTH_LONG
+                    ).show();
+                })
+                .addOnFailureListener(e -> {
+                    if (!isAdded()) return;
+                    setLoading(false);
+                    Log.e(TAG, "Password reset email failed", e);
+                    Toast.makeText(
+                            requireContext(),
+                            R.string.login_password_reset_error,
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
+    }
+
     // ─── Buscar perfil y (opcionalmente) ofrecer biometría ───────────────────
 
     /**
@@ -166,26 +205,33 @@ public class LoginFragment extends Fragment {
             public void onResponse(@NonNull Call<UserRtdbDto> call,
                                    @NonNull Response<UserRtdbDto> response) {
                 if (!isAdded()) return;
-                setLoading(false);
 
                 String email = "", name = "";
+                UserRtdbDto user = null;
                 if (response.isSuccessful() && response.body() != null) {
-                    UserRtdbDto u = response.body();
-                    email = u.email != null ? u.email : "";
-                    name  = u.name  != null ? u.name  : "";
+                    user = response.body();
+                    email = user.email != null ? user.email : "";
+                    name  = user.name  != null ? user.name  : "";
                 } else if (mAuth.getCurrentUser() != null) {
                     email = mAuth.getCurrentUser().getEmail() != null
                             ? mAuth.getCurrentUser().getEmail() : "";
                 }
 
-                final String finalEmail = email;
+                FirebaseUser authUser = mAuth.getCurrentUser();
+                String authEmail = authUser != null && authUser.getEmail() != null
+                        ? authUser.getEmail().trim()
+                        : "";
+                final String finalEmail = !authEmail.isEmpty() ? authEmail : email;
                 final String finalName  = name;
-
-                if (offerBiometric && shouldOfferBiometric()) {
-                    showBiometricOfferDialog(view, uid, finalEmail, finalName);
-                } else {
-                    navigateToHome(view, finalEmail, finalName);
-                }
+                synchronizeVerifiedEmailIndex(uid, user, () -> {
+                    if (!isAdded()) return;
+                    setLoading(false);
+                    if (offerBiometric && shouldOfferBiometric()) {
+                        showBiometricOfferDialog(view, uid, finalEmail, finalName);
+                    } else {
+                        navigateToHome(view, finalEmail, finalName);
+                    }
+                });
             }
 
             @Override
@@ -201,6 +247,142 @@ public class LoginFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private void synchronizeVerifiedEmailIndex(
+            @NonNull String uid,
+            @Nullable UserRtdbDto profile,
+            @NonNull Runnable completion
+    ) {
+        FirebaseUser authUser = mAuth.getCurrentUser();
+        String verifiedEmail = authUser != null && authUser.getEmail() != null
+                ? authUser.getEmail().trim()
+                : "";
+        String storedEmail = profile != null && profile.email != null
+                ? profile.email.trim()
+                : "";
+        if (profile == null
+                || verifiedEmail.isEmpty()
+                || verifiedEmail.equalsIgnoreCase(storedEmail)) {
+            completion.run();
+            return;
+        }
+
+        String newEmailKey = RegisterFragment.emailToKey(verifiedEmail);
+        realtimeDatabaseApi.getUidByEmail(newEmailKey).enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
+                if (!isAdded()) return;
+                if (!response.isSuccessful()) {
+                    Log.w(TAG, "Could not validate verified email index: " + response.code());
+                    completion.run();
+                    return;
+                }
+
+                String indexedUid = response.body();
+                if (indexedUid != null && !indexedUid.trim().isEmpty() && !uid.equals(indexedUid.trim())) {
+                    Toast.makeText(
+                            requireContext(),
+                            R.string.profile_email_already_in_use,
+                            Toast.LENGTH_LONG
+                    ).show();
+                    completion.run();
+                    return;
+                }
+                patchVerifiedProfileEmail(uid, storedEmail, verifiedEmail, completion);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                Log.w(TAG, "Could not validate verified email index", t);
+                completion.run();
+            }
+        });
+    }
+
+    private void patchVerifiedProfileEmail(
+            @NonNull String uid,
+            @NonNull String oldEmail,
+            @NonNull String newEmail,
+            @NonNull Runnable completion
+    ) {
+        Map<String, Object> updates = new LinkedHashMap<>();
+        updates.put("email", newEmail);
+        realtimeDatabaseApi.patchUser(uid, updates).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                if (!isAdded()) return;
+                if (!response.isSuccessful()) {
+                    Log.w(TAG, "Could not sync verified profile email: " + response.code());
+                    completion.run();
+                    return;
+                }
+                putVerifiedEmailIndex(uid, oldEmail, newEmail, completion);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                Log.w(TAG, "Could not sync verified profile email", t);
+                completion.run();
+            }
+        });
+    }
+
+    private void putVerifiedEmailIndex(
+            @NonNull String uid,
+            @NonNull String oldEmail,
+            @NonNull String newEmail,
+            @NonNull Runnable completion
+    ) {
+        realtimeDatabaseApi.putEmailIndex(RegisterFragment.emailToKey(newEmail), uid)
+                .enqueue(new Callback<String>() {
+                    @Override
+                    public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
+                        if (!isAdded()) return;
+                        if (!response.isSuccessful()) {
+                            Log.w(TAG, "Could not sync verified email index: " + response.code());
+                            completion.run();
+                            return;
+                        }
+                        deletePreviousEmailIndex(oldEmail, newEmail, completion);
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+                        if (!isAdded()) return;
+                        Log.w(TAG, "Could not sync verified email index", t);
+                        completion.run();
+                    }
+                });
+    }
+
+    private void deletePreviousEmailIndex(
+            @NonNull String oldEmail,
+            @NonNull String newEmail,
+            @NonNull Runnable completion
+    ) {
+        if (oldEmail.isEmpty() || oldEmail.equalsIgnoreCase(newEmail)) {
+            completion.run();
+            return;
+        }
+        realtimeDatabaseApi.deleteEmailIndex(RegisterFragment.emailToKey(oldEmail))
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                        if (!response.isSuccessful()) {
+                            Log.w(TAG, "Could not delete previous email index: " + response.code());
+                        }
+                        completion.run();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                        Log.w(TAG, "Could not delete previous email index", t);
+                        completion.run();
+                    }
+                });
     }
 
     // ─── Oferta de biometría post-login ──────────────────────────────────────
@@ -268,6 +450,7 @@ public class LoginFragment extends Fragment {
     private void setLoading(boolean loading) {
         if (progress != null) progress.setVisibility(loading ? View.VISIBLE : View.GONE);
         if (btnLogin  != null) btnLogin.setEnabled(!loading);
+        if (btnForgotPassword != null) btnForgotPassword.setEnabled(!loading);
     }
 
     private void navigateToHome(View view, String email, String name) {

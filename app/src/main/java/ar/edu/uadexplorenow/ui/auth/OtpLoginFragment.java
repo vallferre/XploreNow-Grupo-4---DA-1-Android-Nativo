@@ -339,9 +339,7 @@ public class OtpLoginFragment extends Fragment {
                             SessionStore.saveOtpSession(requireContext(), uid, otpEmail);
                             fetchUserAndNavigate(view, uid);
                         } else {
-                            // Email no encontrado en el índice (usuario no registrado
-                            // o registrado antes de que se implementara el índice).
-                            navigateToHome(view, otpEmail, "");
+                            handleProfileLookupFailure(R.string.otp_login_profile_not_found);
                         }
                     }
 
@@ -349,9 +347,17 @@ public class OtpLoginFragment extends Fragment {
                     public void onFailure(@NonNull Call<String> call,
                                           @NonNull Throwable t) {
                         if (!isAdded()) return;
-                        navigateToHome(view, otpEmail, "");
+                        handleProfileLookupFailure(R.string.otp_login_profile_lookup_error);
                     }
                 });
+    }
+
+    private void handleProfileLookupFailure(int messageResId) {
+        if (!isAdded()) return;
+        SessionStore.clear(requireContext());
+        FirebaseAuth.getInstance().signOut();
+        btnOtpLoginVerify.setEnabled(true);
+        Toast.makeText(requireContext(), messageResId, Toast.LENGTH_LONG).show();
     }
 
     private void fetchUserAndNavigate(View view, String uid) {

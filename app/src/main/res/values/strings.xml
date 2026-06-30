@@ -36,6 +36,9 @@
 
     <!-- Errores Firebase -->
     <string name="error_login_failed">Email o contraseña incorrectos</string>
+    <string name="login_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="login_password_reset_sent">Si existe una cuenta con ese email, recibirás un enlace para crear una contraseña nueva.</string>
+    <string name="login_password_reset_error">No se pudo enviar el correo de recuperación. Revisá la conexión e intentá nuevamente.</string>
     <string name="error_firestore">Error al guardar el usuario</string>
     <string name="explore_title">Explorar</string>
     <string name="explore_search_hint">Buscar actividades…</string>
@@ -119,6 +122,8 @@
     <string name="otp_login_with_password">Volver al inicio de sesión clásico</string>
     <string name="otp_login_email_hint">Tu email registrado</string>
     <string name="otp_login_success">Sesión iniciada correctamente</string>
+    <string name="otp_login_profile_not_found">No encontramos un perfil asociado a ese email. Si acabás de cambiarlo, ingresá primero con email y contraseña.</string>
+    <string name="otp_login_profile_lookup_error">No se pudo comprobar el perfil. Revisá la conexión e intentá nuevamente.</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
@@ -201,7 +206,8 @@
     <string name="profile_email_update_error">No se pudo actualizar el email.</string>
     <string name="profile_email_recent_login_required">Para cambiar el email, volve a iniciar sesion e intentalo de nuevo.</string>
     <string name="profile_email_verification_required">Firebase requiere verificar el nuevo email antes de aplicarlo. Revisá tu bandeja y confirmá el cambio.</string>
-    <string name="profile_email_verification_sent">Te enviamos un correo al nuevo email. Por seguridad cerraremos la sesion. Verifica el enlace y luego vuelve a iniciar sesion. Hasta verificarlo, segui ingresando con tu email actual.</string>
+    <string name="profile_email_verification_sent">Te enviamos un correo al nuevo email. Verificá el enlace y luego iniciá sesión una vez con el email nuevo y tu contraseña. Después de ese ingreso también podrás usar código OTP.</string>
+    <string name="profile_email_password_login_required">Para cambiar el email, cerra sesion e ingresa con email y contrasena, no con codigo. Si tenes un cambio pendiente, verifica primero el enlace recibido.</string>
     <string name="profile_back">Volver</string>
     <string name="profile_logout">Desconectar</string>
 
