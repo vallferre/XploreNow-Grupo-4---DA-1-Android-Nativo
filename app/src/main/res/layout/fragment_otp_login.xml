@@ -224,7 +224,7 @@
             android:layout_marginTop="24dp"
             android:text="@string/otp_login_with_password"
             android:textSize="14sp"
-            android:textColor="#E63946"
+            android:textColor="@color/explore_accent"
             android:textStyle="bold" />
 
         <!-- Registrarse -->
@@ -247,7 +247,7 @@
                 android:layout_height="wrap_content"
                 android:text="Registrate"
                 android:textSize="14sp"
-                android:textColor="#E63946"
+                android:textColor="@color/explore_accent"
                 android:textStyle="bold" />
 
         </LinearLayout>

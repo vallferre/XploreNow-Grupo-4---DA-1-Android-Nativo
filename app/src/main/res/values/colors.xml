@@ -10,20 +10,20 @@
     <color name="explore_chip_bg">#FFF1F5F9</color>
     <color name="explore_chip_stroke">#FFE2E8F0</color>
     <color name="explore_price_green">#FF16825D</color>
-    <color name="explore_accent_purple">#FFF26157</color>
-    <color name="explore_nav_selected_bg">#1FF26157</color>
-    <color name="explore_category_pill">#FFFFE9E7</color>
+    <color name="explore_accent_purple">#FF2F80ED</color>
+    <color name="explore_nav_selected_bg">#1F2F80ED</color>
+    <color name="explore_category_pill">#FFE8F1FF</color>
     <color name="explore_duration_pill">#FFE7F4F1</color>
     <color name="explore_warning">#FFD64545</color>
     <color name="explore_search_bg">#FFFFFFFF</color>
     <color name="explore_header_start">#FF0B2036</color>
     <color name="explore_header_end">#FF163D62</color>
-    <color name="explore_accent">#FFF26157</color>
-    <color name="explore_accent_pressed">#FFD94C43</color>
+    <color name="explore_accent">#FF2F80ED</color>
+    <color name="explore_accent_pressed">#FF2468C9</color>
     <color name="explore_surface_soft">#FFEAF0F6</color>
     <!-- Filtros (bottom sheet) -->
-    <color name="filter_primary">#FFF26157</color>
-    <color name="filter_primary_light">#FFFFE9E7</color>
+    <color name="filter_primary">#FF2F80ED</color>
+    <color name="filter_primary_light">#FFE8F1FF</color>
     <color name="filter_sheet_handle">#FFBDBDBD</color>
     <color name="filter_chip_sheet_bg">#FFF1F5F9</color>
     <color name="filter_slider_inactive">#FFE0E0E0</color>

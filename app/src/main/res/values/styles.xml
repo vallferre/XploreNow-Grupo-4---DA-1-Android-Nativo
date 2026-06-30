@@ -3,9 +3,9 @@
 
     <!-- Estilo base heredado del tema de la app -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">#E63946</item>
-        <item name="colorPrimaryDark">#C1121F</item>
-        <item name="colorAccent">#E63946</item>
+        <item name="colorPrimary">@color/explore_accent</item>
+        <item name="colorPrimaryDark">@color/explore_accent_pressed</item>
+        <item name="colorAccent">@color/explore_accent</item>
     </style>
 
     <!-- Cada campo individual del código OTP (ancho vía layout_weight en el contenedor) -->

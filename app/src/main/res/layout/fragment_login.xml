@@ -111,7 +111,7 @@
                 android:focusable="true"
                 android:padding="6dp"
                 android:text="@string/login_forgot_password"
-                android:textColor="#E63946"
+                android:textColor="@color/explore_accent"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -174,7 +174,7 @@
                 android:layout_height="wrap_content"
                 android:text="Registrate"
                 android:textSize="14sp"
-                android:textColor="#E63946"
+                android:textColor="@color/explore_accent"
                 android:textStyle="bold" />
 
         </LinearLayout>
