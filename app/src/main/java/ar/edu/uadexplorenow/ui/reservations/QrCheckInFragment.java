@@ -27,6 +27,7 @@ import ar.edu.uadexplorenow.data.local.db.CachedReservationDao;
 import ar.edu.uadexplorenow.data.local.db.CachedReservationEntity;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ReservationItem;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -114,6 +115,7 @@ public class QrCheckInFragment extends Fragment {
         btnRetry = view.findViewById(R.id.btnRetry);
         btnClose = view.findViewById(R.id.btnClose);
         ImageButton btnBack = view.findViewById(R.id.btnBack);
+        SystemBarInsetsHelper.applyTopPadding(view.findViewById(R.id.qrRoot));
 
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         btnClose.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());

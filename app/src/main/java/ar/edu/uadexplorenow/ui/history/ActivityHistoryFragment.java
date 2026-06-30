@@ -35,6 +35,7 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 import ar.edu.uadexplorenow.domain.ReservationItem;
 import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 import ar.edu.uadexplorenow.ui.reservations.ReservationDetailFragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -135,6 +136,7 @@ public class ActivityHistoryFragment extends Fragment {
             return;
         }
 
+        SystemBarInsetsHelper.applyTopPadding(view.findViewById(R.id.headerContainer));
         ImageButton btnBack = view.findViewById(R.id.btnBack);
         etSearch = view.findViewById(R.id.etSearch);
         spinnerDestination = view.findViewById(R.id.spinnerDestination);

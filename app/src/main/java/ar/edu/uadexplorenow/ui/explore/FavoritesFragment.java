@@ -29,6 +29,7 @@ import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.domain.FavoriteListRow;
 import ar.edu.uadexplorenow.domain.FavoriteListRow.SpotsNovelty;
 import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -93,6 +94,7 @@ public class FavoritesFragment extends Fragment {
         }
         effectiveUid = SessionStore.getEffectiveUid(requireContext(), currentUser);
 
+        SystemBarInsetsHelper.applyTopPadding(view.findViewById(R.id.headerContainer));
         ImageButton btnBack = view.findViewById(R.id.btnBack);
         progress = view.findViewById(R.id.progress);
         tvEmpty = view.findViewById(R.id.tvEmpty);

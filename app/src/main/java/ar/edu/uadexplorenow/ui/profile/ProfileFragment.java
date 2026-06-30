@@ -74,6 +74,7 @@ import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ReservationItem;
 import ar.edu.uadexplorenow.domain.ReservationStatus;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -185,6 +186,7 @@ public class ProfileFragment extends Fragment {
         effectiveUid   = SessionStore.getEffectiveUid(requireContext(), currentUser);
         effectiveEmail = SessionStore.getEffectiveEmail(requireContext(), currentUser);
 
+        SystemBarInsetsHelper.applyTopPadding(view.findViewById(R.id.profileRoot));
         ImageButton btnBack = view.findViewById(R.id.btnBack);
         etName = view.findViewById(R.id.etName);
         ivProfilePhoto = view.findViewById(R.id.ivProfilePhoto);

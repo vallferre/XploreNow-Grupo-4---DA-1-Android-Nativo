@@ -27,8 +27,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.ImageViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
@@ -44,6 +42,7 @@ import ar.edu.uadexplorenow.data.model.ActivityRtdbDto;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 import ar.edu.uadexplorenow.ui.reservations.BookingConfirmationFragment;
 
 import com.google.android.material.button.MaterialButton;
@@ -173,7 +172,7 @@ public class ActivityDetailFragment extends Fragment {
         btnReserve = view.findViewById(R.id.btnReserve);
 
         final String activityId = id;
-        applyStatusBarInset(heroTopActions);
+        SystemBarInsetsHelper.applyTopPadding(heroTopActions);
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         if (btnFavorite != null) {
             btnFavorite.setOnClickListener(v -> onFavoriteButtonClicked(activityId));
@@ -230,20 +229,6 @@ public class ActivityDetailFragment extends Fragment {
                 Navigation.findNavController(view).popBackStack();
             }
         });
-    }
-
-    private void applyStatusBarInset(@NonNull View heroTopActions) {
-        int initialPaddingTop = heroTopActions.getPaddingTop();
-        ViewCompat.setOnApplyWindowInsetsListener(heroTopActions, (target, insets) -> {
-            int statusBarTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-            target.setPadding(
-                    target.getPaddingLeft(),
-                    initialPaddingTop + statusBarTop,
-                    target.getPaddingRight(),
-                    target.getPaddingBottom());
-            return insets;
-        });
-        ViewCompat.requestApplyInsets(heroTopActions);
     }
 
     @Override

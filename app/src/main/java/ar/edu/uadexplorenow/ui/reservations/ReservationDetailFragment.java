@@ -41,6 +41,7 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 import ar.edu.uadexplorenow.domain.ReservationItem;
 import ar.edu.uadexplorenow.domain.ReservationStatus;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.common.ConnectionResult;
@@ -165,6 +166,7 @@ public class ReservationDetailFragment extends Fragment {
         }
 
         ImageButton btnBack = view.findViewById(R.id.btnBack);
+        SystemBarInsetsHelper.applyTopMargin(btnBack);
         contentRoot = view.findViewById(R.id.contentRoot);
         progress = view.findViewById(R.id.progress);
         btnCancelReservation = view.findViewById(R.id.btnCancelReservation);
