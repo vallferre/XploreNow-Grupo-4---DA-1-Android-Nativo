@@ -32,6 +32,7 @@ import ar.edu.uadexplorenow.data.NotificationsRepository;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.domain.NotificationItem;
 import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 import ar.edu.uadexplorenow.ui.explore.ActivityDetailFragment;
 import ar.edu.uadexplorenow.ui.explore.NewsDetailFragment;
 import ar.edu.uadexplorenow.ui.reservations.ReservationDetailFragment;
@@ -77,6 +78,7 @@ public final class NotificationsFragment extends Fragment {
         }
         effectiveUid = SessionStore.getEffectiveUid(requireContext(), user);
 
+        SystemBarInsetsHelper.applyTopPadding(view.findViewById(R.id.headerContainer));
         ImageButton btnBack = view.findViewById(R.id.btnBack);
         rvNotifications = view.findViewById(R.id.rvNotifications);
         tvEmpty = view.findViewById(R.id.tvEmpty);

@@ -51,6 +51,7 @@ import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.domain.NewsItem;
 import ar.edu.uadexplorenow.ui.auth.LoginFragment;
 import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -171,6 +172,7 @@ public class ExploreFragment extends Fragment {
             return;
         }
 
+        SystemBarInsetsHelper.applyTopPadding(view.findViewById(R.id.exploreHeader));
         scrollContent = view.findViewById(R.id.scrollContent);
         etSearch = view.findViewById(R.id.etSearch);
         rvNews = view.findViewById(R.id.rvNews);

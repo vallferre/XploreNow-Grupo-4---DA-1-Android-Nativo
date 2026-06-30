@@ -27,6 +27,7 @@ import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.model.NewsMapper;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.NewsItem;
+import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 import dagger.hilt.android.AndroidEntryPoint;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -63,6 +64,7 @@ public class NewsDetailFragment extends Fragment {
         }
 
         ImageButton btnBack = view.findViewById(R.id.btnBack);
+        SystemBarInsetsHelper.applyTopMargin(btnBack);
         ProgressBar progress = view.findViewById(R.id.progress);
         View contentRoot = view.findViewById(R.id.contentRoot);
         ImageView ivCover = view.findViewById(R.id.ivNewsCover);
