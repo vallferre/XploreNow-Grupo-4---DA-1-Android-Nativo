@@ -23,30 +23,36 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_gravity="start|top"
-                android:layout_marginStart="12dp"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_detail_back_circle"
-                android:contentDescription="@string/detail_back"
-                android:padding="10dp"
-                android:src="@drawable/ic_arrow_back_white" />
+            <FrameLayout
+                android:id="@+id/heroTopActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-            <ImageButton
-                android:id="@+id/btnFavorite"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_gravity="end|top"
-                android:layout_marginTop="12dp"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/bg_detail_back_circle"
-                android:contentDescription="@string/favorite_toggle_cd"
-                android:padding="10dp"
-                android:scaleType="centerInside"
-                tools:src="@drawable/ic_favorite_border_24" />
+                <ImageButton
+                    android:id="@+id/btnBack"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="start|top"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_detail_back_circle"
+                    android:contentDescription="@string/detail_back"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_arrow_back_white" />
+
+                <ImageButton
+                    android:id="@+id/btnFavorite"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="end|top"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/bg_detail_back_circle"
+                    android:contentDescription="@string/favorite_toggle_cd"
+                    android:padding="10dp"
+                    android:scaleType="centerInside"
+                    tools:src="@drawable/ic_favorite_border_24" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/tvHeroCategory"

@@ -27,6 +27,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.ImageViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
@@ -143,6 +145,7 @@ public class ActivityDetailFragment extends Fragment {
         ProgressBar progress = view.findViewById(R.id.progress);
         ViewPager2 photoPager = view.findViewById(R.id.photoPager);
         LinearLayout dotsContainer = view.findViewById(R.id.dotsContainer);
+        View heroTopActions = view.findViewById(R.id.heroTopActions);
         ImageButton btnBack = view.findViewById(R.id.btnBack);
         btnFavorite = view.findViewById(R.id.btnFavorite);
         TextView tvHeroCategory = view.findViewById(R.id.tvHeroCategory);
@@ -170,6 +173,7 @@ public class ActivityDetailFragment extends Fragment {
         btnReserve = view.findViewById(R.id.btnReserve);
 
         final String activityId = id;
+        applyStatusBarInset(heroTopActions);
         btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         if (btnFavorite != null) {
             btnFavorite.setOnClickListener(v -> onFavoriteButtonClicked(activityId));
@@ -226,6 +230,20 @@ public class ActivityDetailFragment extends Fragment {
                 Navigation.findNavController(view).popBackStack();
             }
         });
+    }
+
+    private void applyStatusBarInset(@NonNull View heroTopActions) {
+        int initialPaddingTop = heroTopActions.getPaddingTop();
+        ViewCompat.setOnApplyWindowInsetsListener(heroTopActions, (target, insets) -> {
+            int statusBarTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            target.setPadding(
+                    target.getPaddingLeft(),
+                    initialPaddingTop + statusBarTop,
+                    target.getPaddingRight(),
+                    target.getPaddingBottom());
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(heroTopActions);
     }
 
     @Override
