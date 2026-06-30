@@ -50,12 +50,14 @@ public class MainActivity extends AppCompatActivity {
         NavHostFragment host = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
         if (host == null) return;
+        WindowInsetsControllerCompat insetsController = WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView());
+        insetsController.setAppearanceLightStatusBars(true);
+        insetsController.setAppearanceLightNavigationBars(true);
+
         host.getNavController().addOnDestinationChangedListener((controller, destination, arguments) -> {
-            WindowInsetsControllerCompat insetsController = WindowCompat.getInsetsController(
-                    getWindow(),
-                    getWindow().getDecorView());
-            boolean isExplore = destination.getId() == R.id.exploreFragment;
-            insetsController.setAppearanceLightStatusBars(!isExplore);
+            insetsController.setAppearanceLightStatusBars(true);
             insetsController.setAppearanceLightNavigationBars(true);
         });
     }
