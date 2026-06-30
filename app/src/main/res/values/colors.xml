@@ -2,24 +2,30 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="explore_bg">#FFF8F8FA</color>
-    <color name="explore_title">#FF1A1A1A</color>
-    <color name="explore_muted">#FF6B6B6B</color>
-    <color name="explore_chip_selected">#FF1E3A5F</color>
-    <color name="explore_chip_bg">#FFF0F0F2</color>
-    <color name="explore_chip_stroke">#FFD0D0D5</color>
-    <color name="explore_price_green">#FF2E7D32</color>
-    <color name="explore_accent_purple">#FF7C4DFF</color>
-    <color name="explore_nav_selected_bg">#337C4DFF</color>
-    <color name="explore_category_pill">#FFE8E0F5</color>
-    <color name="explore_duration_pill">#FFE3F2E5</color>
-    <color name="explore_warning">#FFC62828</color>
-    <color name="explore_search_bg">#FFF0F0F2</color>
+    <!-- Sistema visual principal: azul profundo, coral y superficies neutras. -->
+    <color name="explore_bg">#FFF5F7FA</color>
+    <color name="explore_title">#FF14213D</color>
+    <color name="explore_muted">#FF64748B</color>
+    <color name="explore_chip_selected">#FF0F2A43</color>
+    <color name="explore_chip_bg">#FFF1F5F9</color>
+    <color name="explore_chip_stroke">#FFE2E8F0</color>
+    <color name="explore_price_green">#FF16825D</color>
+    <color name="explore_accent_purple">#FFF26157</color>
+    <color name="explore_nav_selected_bg">#1FF26157</color>
+    <color name="explore_category_pill">#FFFFE9E7</color>
+    <color name="explore_duration_pill">#FFE7F4F1</color>
+    <color name="explore_warning">#FFD64545</color>
+    <color name="explore_search_bg">#FFFFFFFF</color>
+    <color name="explore_header_start">#FF0B2036</color>
+    <color name="explore_header_end">#FF163D62</color>
+    <color name="explore_accent">#FFF26157</color>
+    <color name="explore_accent_pressed">#FFD94C43</color>
+    <color name="explore_surface_soft">#FFEAF0F6</color>
     <!-- Filtros (bottom sheet) -->
-    <color name="filter_primary">#FF5848A8</color>
-    <color name="filter_primary_light">#FFEDE7F6</color>
+    <color name="filter_primary">#FFF26157</color>
+    <color name="filter_primary_light">#FFFFE9E7</color>
     <color name="filter_sheet_handle">#FFBDBDBD</color>
-    <color name="filter_chip_sheet_bg">#FFF0F0F2</color>
+    <color name="filter_chip_sheet_bg">#FFF1F5F9</color>
     <color name="filter_slider_inactive">#FFE0E0E0</color>
     <color name="detail_info_card_bg">#FFF0F0F2</color>
     <color name="detail_meeting_bg">#FFE8F5E9</color>

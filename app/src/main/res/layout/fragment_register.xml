@@ -162,6 +162,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/bg_button_primary"
+                    android:backgroundTint="@null"
                     android:letterSpacing="0.1"
                     android:text="@string/register_continue_to_otp"
                     android:textColor="#FFFFFF"

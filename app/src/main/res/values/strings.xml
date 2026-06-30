@@ -41,8 +41,9 @@
     <string name="login_password_reset_error">No se pudo enviar el correo de recuperación. Revisá la conexión e intentá nuevamente.</string>
     <string name="error_firestore">Error al guardar el usuario</string>
     <string name="explore_title">Explorar</string>
+    <string name="explore_subtitle">Descubrí tu próxima experiencia</string>
     <string name="explore_search_hint">Buscar actividades…</string>
-    <string name="explore_section_featured">⭐ Recomendadas para ti</string>
+    <string name="explore_section_featured">Recomendadas para ti</string>
     <string name="explore_section_all">Todas las actividades</string>
     <string name="explore_chip_all">Todos</string>
     <string name="explore_cupos_left">⚠️ %1$d cupos</string>

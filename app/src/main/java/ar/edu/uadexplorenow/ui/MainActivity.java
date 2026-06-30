@@ -10,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
@@ -37,10 +39,25 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        configureSystemBars();
         LocalNotificationPresenter.ensureChannel(this);
         requestNotificationPermissionIfNeeded();
         NotificationWorkScheduler.schedule(this);
         handleNotificationIntent(getIntent());
+    }
+
+    private void configureSystemBars() {
+        NavHostFragment host = (NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment);
+        if (host == null) return;
+        host.getNavController().addOnDestinationChangedListener((controller, destination, arguments) -> {
+            WindowInsetsControllerCompat insetsController = WindowCompat.getInsetsController(
+                    getWindow(),
+                    getWindow().getDecorView());
+            boolean isExplore = destination.getId() == R.id.exploreFragment;
+            insetsController.setAppearanceLightStatusBars(!isExplore);
+            insetsController.setAppearanceLightNavigationBars(true);
+        });
     }
 
     @Override

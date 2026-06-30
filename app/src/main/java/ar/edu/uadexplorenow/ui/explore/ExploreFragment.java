@@ -522,7 +522,7 @@ public class ExploreFragment extends Fragment {
             btnProfile.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
             btnProfile.setImageResource(R.drawable.ic_nav_person);
             btnProfile.setImageTintList(ColorStateList.valueOf(
-                    ContextCompat.getColor(requireContext(), R.color.explore_title)));
+                    ContextCompat.getColor(requireContext(), R.color.white)));
             return;
         }
 
