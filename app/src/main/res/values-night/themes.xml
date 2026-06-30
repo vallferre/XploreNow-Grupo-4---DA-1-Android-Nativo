@@ -1,7 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.XploreNow" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/explore_accent</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/explore_chip_selected</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/explore_category_pill</item>
+        <item name="colorOnSecondaryContainer">@color/explore_accent</item>
+        <item name="colorTertiary">@color/explore_price_green</item>
+        <item name="android:colorAccent">@color/explore_accent</item>
     </style>
 </resources>

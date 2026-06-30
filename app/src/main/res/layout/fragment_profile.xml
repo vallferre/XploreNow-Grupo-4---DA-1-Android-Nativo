@@ -26,7 +26,7 @@
                 android:id="@+id/btnBack"
                 android:layout_width="42dp"
                 android:layout_height="42dp"
-                android:background="@drawable/bg_detail_back_circle"
+                android:background="@drawable/bg_profile_back_circle"
                 android:contentDescription="@string/profile_back"
                 android:padding="10dp"
                 android:src="@drawable/ic_arrow_back_white" />
@@ -159,14 +159,6 @@
                 android:textColor="@color/explore_title"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/profile_section_personal_help"
-                android:textColor="@color/explore_muted"
-                android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -449,6 +441,7 @@
             android:layout_height="52dp"
             android:layout_marginTop="22dp"
             android:background="@drawable/bg_button_primary"
+            android:backgroundTint="@null"
             android:text="@string/profile_save"
             android:textColor="@android:color/white"
             android:textSize="14sp"
@@ -468,6 +461,7 @@
             android:layout_height="52dp"
             android:layout_marginTop="18dp"
             android:background="@drawable/bg_button_secondary"
+            android:backgroundTint="@null"
             android:textColor="#1A1A2E"
             android:textSize="14sp"
             android:textStyle="bold" />

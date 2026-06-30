@@ -6,14 +6,17 @@
     android:layout_height="match_parent"
     android:background="@color/explore_bg">
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/scrollContent"
+    <LinearLayout
+        android:id="@+id/exploreHeader"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:fillViewport="false"
-        android:paddingBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@id/offlineBanner"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_explore_header"
+        android:elevation="6dp"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="18dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="22dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -21,132 +24,164 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/explore_title"
+                    android:textColor="@color/white"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/explore_subtitle"
+                    android:textColor="#CFFFFFFF"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp">
+
+                <ImageButton
+                    android:id="@+id/btnNotifications"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_explore_header_icon"
+                    android:contentDescription="@string/notifications_open"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_notification_24"
+                    app:tint="@color/white" />
+
+                <TextView
+                    android:id="@+id/tvNotificationsBadge"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bg_notification_badge"
+                    android:gravity="center"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:text="3"
+                    tools:visibility="visible" />
+            </FrameLayout>
+
+            <ImageButton
+                android:id="@+id/btnProfile"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_explore_header_icon"
+                android:clipToOutline="true"
+                android:contentDescription="@string/explore_nav_profile"
+                android:padding="9dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_nav_person"
+                app:tint="@color/white" />
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1F14213D"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="52dp"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="8dp">
 
-                <TextView
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_search_small"
+                    app:tint="@color/explore_muted" />
+
+                <EditText
+                    android:id="@+id/etSearch"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginHorizontal="10dp"
                     android:layout_weight="1"
-                    android:text="@string/explore_title"
+                    android:background="@android:color/transparent"
+                    android:hint="@string/explore_search_hint"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1"
                     android:textColor="@color/explore_title"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
-
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginEnd="4dp">
-
-                    <ImageButton
-                        android:id="@+id/btnNotifications"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_gravity="center"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/notifications_open"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_notification_24"
-                        app:tint="@color/explore_title" />
-
-                    <TextView
-                        android:id="@+id/tvNotificationsBadge"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:layout_gravity="top|end"
-                        android:background="@drawable/bg_notification_badge"
-                        android:gravity="center"
-                        android:textColor="@color/white"
-                        android:textSize="10sp"
-                        android:textStyle="bold"
-                        android:visibility="gone"
-                        tools:text="3"
-                        tools:visibility="visible" />
-                </FrameLayout>
+                    android:textColorHint="@color/explore_muted"
+                    android:textSize="15sp" />
 
                 <ImageButton
-                    android:id="@+id/btnProfile"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:id="@+id/btnFilter"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/explore_nav_profile"
-                    android:padding="6dp"
-                    android:src="@drawable/ic_nav_person"
-                    app:tint="@color/explore_title" />
+                    android:contentDescription="@string/explore_open_filters"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_tune_small"
+                    app:tint="@color/explore_accent" />
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/explore_search_bg"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="false"
+        app:layout_constraintBottom_toTopOf="@id/offlineBanner"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/exploreHeader">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_search_small" />
-
-                    <EditText
-                        android:id="@+id/etSearch"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginHorizontal="10dp"
-                        android:layout_weight="1"
-                        android:background="@android:color/transparent"
-                        android:hint="@string/explore_search_hint"
-                        android:imeOptions="actionSearch"
-                        android:inputType="text"
-                        android:maxLines="1"
-                        android:textColor="@color/explore_title"
-                        android:textColorHint="@color/explore_muted"
-                        android:textSize="15sp" />
-
-                    <ImageButton
-                        android:id="@+id/btnFilter"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/explore_open_filters"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_tune_small" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingTop="22dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="24dp">
 
             <TextView
                 android:id="@+id/tvSectionNews"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
                 android:text="@string/news_section_title"
                 android:textColor="@color/explore_title"
-                android:textSize="16sp"
+                android:textSize="19sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvNews"
                 android:layout_width="match_parent"
-                android:layout_height="242dp"
-                android:layout_marginTop="10dp"
+                android:layout_height="300dp"
+                android:layout_marginTop="12dp"
                 android:clipToPadding="false"
                 android:paddingEnd="4dp"
                 android:visibility="gone"
@@ -157,17 +192,17 @@
                 android:id="@+id/tvSectionFeatured"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="18dp"
                 android:text="@string/explore_section_featured"
                 android:textColor="@color/explore_title"
-                android:textSize="16sp"
+                android:textSize="19sp"
                 android:textStyle="bold" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvFeatured"
                 android:layout_width="match_parent"
-                android:layout_height="280dp"
-                android:layout_marginTop="10dp"
+                android:layout_height="286dp"
+                android:layout_marginTop="12dp"
                 android:clipToPadding="false"
                 android:paddingEnd="4dp"
                 tools:itemCount="1"
@@ -177,17 +212,17 @@
                 android:id="@+id/tvSectionAll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="24dp"
                 android:text="@string/explore_section_all"
                 android:textColor="@color/explore_title"
-                android:textSize="16sp"
+                android:textSize="19sp"
                 android:textStyle="bold" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvAll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="12dp"
                 android:background="@android:color/transparent"
                 android:clipToPadding="true"
                 android:nestedScrollingEnabled="false"
@@ -214,7 +249,7 @@
         app:layout_constraintBottom_toTopOf="@id/offlineBanner"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/exploreHeader" />
 
     <include
         android:id="@+id/offlineBanner"
@@ -230,8 +265,11 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/white"
-        app:itemIconTint="@color/explore_title"
-        app:itemTextColor="@color/explore_title"
+        android:elevation="12dp"
+        android:minHeight="80dp"
+        app:itemIconTint="@color/explore_bottom_nav_item"
+        app:itemRippleColor="@color/explore_nav_selected_bg"
+        app:itemTextColor="@color/explore_bottom_nav_item"
         app:labelVisibilityMode="labeled"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
