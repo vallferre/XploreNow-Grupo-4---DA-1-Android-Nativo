@@ -2,6 +2,7 @@ package ar.edu.uadexplorenow.ui.explore;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -32,6 +33,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
+import com.bumptech.glide.signature.ObjectKey;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.FavoritesRepository;
 import ar.edu.uadexplorenow.data.NotificationsRepository;
@@ -259,7 +262,6 @@ public class ExploreFragment extends Fragment {
 
         effectiveUid = SessionStore.getEffectiveUid(
                 requireContext(), FirebaseAuth.getInstance().getCurrentUser());
-        loadUserPreferences(effectiveUid);
         loadNews();
     }
 
@@ -267,6 +269,7 @@ public class ExploreFragment extends Fragment {
     public void onResume() {
         super.onResume();
         if (FirebaseAuth.getInstance().getCurrentUser() != null && !effectiveUid.isEmpty()) {
+            loadUserPreferences(effectiveUid);
             loadFavoritesFromServer();
             loadActivities();
             updateNotificationsBadge();
@@ -526,8 +529,16 @@ public class ExploreFragment extends Fragment {
         btnProfile.setPadding(0, 0, 0, 0);
         btnProfile.setScaleType(ImageButton.ScaleType.CENTER_CROP);
         btnProfile.setImageTintList(null);
-        Glide.with(this)
-                .load(photoModel)
+        RequestBuilder<Drawable> request = Glide.with(this).load(photoModel);
+        if (photoModel instanceof File) {
+            File localPhoto = (File) photoModel;
+            request = request.signature(new ObjectKey(
+                    localPhoto.getAbsolutePath()
+                            + ":" + localPhoto.lastModified()
+                            + ":" + localPhoto.length()
+            ));
+        }
+        request
                 .circleCrop()
                 .placeholder(R.drawable.ic_nav_person)
                 .error(R.drawable.ic_nav_person)
@@ -556,7 +567,7 @@ public class ExploreFragment extends Fragment {
                 return null;
             }
             File localFile = new File(path);
-            return localFile.exists() ? uri : null;
+            return localFile.exists() ? localFile : null;
         }
         return uri;
     }

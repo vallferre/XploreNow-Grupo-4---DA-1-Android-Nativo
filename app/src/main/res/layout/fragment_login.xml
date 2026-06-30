@@ -100,12 +100,27 @@
                 android:textColor="#1A1A2E"
                 android:textColorHint="#BBBBBB" />
 
+            <TextView
+                android:id="@+id/btnForgotPassword"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="12dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="6dp"
+                android:text="@string/login_forgot_password"
+                android:textColor="#E63946"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
             <!-- Botón ingresar -->
             <Button
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="16dp"
                 android:background="@drawable/bg_button_primary"
                 android:text="INGRESAR"
                 android:textColor="#FFFFFF"
