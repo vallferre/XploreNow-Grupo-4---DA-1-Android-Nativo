@@ -50,6 +50,7 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityItem;
 import ar.edu.uadexplorenow.domain.NewsItem;
 import ar.edu.uadexplorenow.ui.auth.LoginFragment;
+import ar.edu.uadexplorenow.ui.common.NetworkReconnectObserver;
 import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
 import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 
@@ -102,6 +103,7 @@ public class ExploreFragment extends Fragment {
     UserProfileFileCache userProfileFileCache;
 
     private final ExecutorService cacheExecutor = Executors.newSingleThreadExecutor();
+    private final NetworkReconnectObserver networkReconnectObserver = new NetworkReconnectObserver();
 
     private static final String TAG_ALL = "";
     private static final String PREF_AVENTURA = "aventura";
@@ -270,6 +272,28 @@ public class ExploreFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        refreshFromServerIfLoggedIn();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        networkReconnectObserver.start(requireContext(), this::onNetworkRestored);
+    }
+
+    @Override
+    public void onStop() {
+        networkReconnectObserver.stop(requireContext());
+        super.onStop();
+    }
+
+    private void onNetworkRestored() {
+        if (isAdded()) {
+            refreshFromServerIfLoggedIn();
+        }
+    }
+
+    private void refreshFromServerIfLoggedIn() {
         if (FirebaseAuth.getInstance().getCurrentUser() != null && !effectiveUid.isEmpty()) {
             loadUserPreferences(effectiveUid);
             loadFavoritesFromServer();
