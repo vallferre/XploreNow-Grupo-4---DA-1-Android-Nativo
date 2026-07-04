@@ -34,6 +34,7 @@ import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 import ar.edu.uadexplorenow.domain.ReservationItem;
+import ar.edu.uadexplorenow.ui.common.NetworkReconnectObserver;
 import ar.edu.uadexplorenow.ui.common.OfflineBannerHelper;
 import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 import ar.edu.uadexplorenow.ui.reservations.ReservationDetailFragment;
@@ -80,6 +81,7 @@ public class ActivityHistoryFragment extends Fragment {
     CachedReservationDao cachedReservationDao;
 
     private final ExecutorService cacheExecutor = Executors.newSingleThreadExecutor();
+    private final NetworkReconnectObserver networkReconnectObserver = new NetworkReconnectObserver();
 
     private final List<ReservationItem> allItems = new ArrayList<>();
     private final List<String> destinationValues = new ArrayList<>();
@@ -222,6 +224,25 @@ public class ActivityHistoryFragment extends Fragment {
         super.onResume();
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (hasLoadedOnce && userRequestDone && activitiesRequestDone && currentUser != null && isAdded()) {
+            loadReservations(currentUser);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        networkReconnectObserver.start(requireContext(), this::onNetworkRestored);
+    }
+
+    @Override
+    public void onStop() {
+        networkReconnectObserver.stop(requireContext());
+        super.onStop();
+    }
+
+    private void onNetworkRestored() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (isAdded() && currentUser != null) {
             loadReservations(currentUser);
         }
     }

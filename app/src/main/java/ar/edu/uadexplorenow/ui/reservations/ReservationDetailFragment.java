@@ -41,6 +41,7 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 import ar.edu.uadexplorenow.domain.ReservationItem;
 import ar.edu.uadexplorenow.domain.ReservationStatus;
+import ar.edu.uadexplorenow.ui.common.NetworkReconnectObserver;
 import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 
 import com.bumptech.glide.Glide;
@@ -97,6 +98,8 @@ public class ReservationDetailFragment extends Fragment {
     @Nullable
     private String effectiveUid;
     @Nullable
+    private String reservationId;
+    @Nullable
     private ReservationItem loadedReservation;
     @Nullable
     private MaterialButton btnCancelReservation;
@@ -124,6 +127,8 @@ public class ReservationDetailFragment extends Fragment {
     private GoogleMap meetingPointMap;
     @Nullable
     private Bundle pendingMapViewState;
+
+    private final NetworkReconnectObserver networkReconnectObserver = new NetworkReconnectObserver();
 
     private boolean userDone;
     private boolean activitiesDone;
@@ -159,7 +164,7 @@ public class ReservationDetailFragment extends Fragment {
                 ? savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY)
                 : null;
 
-        String reservationId = getArguments() != null ? getArguments().getString(ARG_RESERVATION_ID) : null;
+        reservationId = getArguments() != null ? getArguments().getString(ARG_RESERVATION_ID) : null;
         if (reservationId == null || reservationId.isEmpty()) {
             Navigation.findNavController(view).popBackStack();
             return;
@@ -196,6 +201,7 @@ public class ReservationDetailFragment extends Fragment {
         if (mapViewInitialized && meetingPointMapView != null) {
             meetingPointMapView.onStart();
         }
+        networkReconnectObserver.start(requireContext(), this::onNetworkRestored);
     }
 
     @Override
@@ -216,10 +222,17 @@ public class ReservationDetailFragment extends Fragment {
 
     @Override
     public void onStop() {
+        networkReconnectObserver.stop(requireContext());
         if (mapViewInitialized && meetingPointMapView != null) {
             meetingPointMapView.onStop();
         }
         super.onStop();
+    }
+
+    private void onNetworkRestored() {
+        if (isAdded() && reservationId != null) {
+            loadReservation(reservationId);
+        }
     }
 
     @Override
