@@ -33,7 +33,6 @@ import java.util.Map;
 import ar.edu.uadexplorenow.R;
 import ar.edu.uadexplorenow.data.SessionStore;
 import ar.edu.uadexplorenow.data.local.BiometricPrefs;
-import ar.edu.uadexplorenow.data.local.TokenManager;
 import ar.edu.uadexplorenow.data.model.UserRtdbDto;
 import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 
@@ -49,7 +48,6 @@ public class LoginFragment extends Fragment {
     private static final String TAG = "LoginFragment";
 
     @Inject RealtimeDatabaseApi realtimeDatabaseApi;
-    @Inject TokenManager tokenManager;
 
     private EditText     etEmail, etPassword;
     private Button       btnLogin;
@@ -148,7 +146,6 @@ public class LoginFragment extends Fragment {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener(authResult -> {
                     if (!isAdded()) return;
-                    tokenManager.saveToken("fake-token-abc123");
                     // Login fresco → ofrecer biometría si no fue configurada
                     fetchUserAndNavigate(view, authResult.getUser().getUid(), true);
                 })
