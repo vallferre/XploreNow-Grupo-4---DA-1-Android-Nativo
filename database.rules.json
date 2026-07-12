@@ -1,0 +1,36 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "activities": {
+      ".read": "auth != null",
+      "$activityId": {
+        ".write": "auth != null"
+      }
+    },
+    "news": {
+      ".read": "auth != null"
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "notifications": {
+          "$notificationId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['id', 'title', 'message', 'source_type', 'source_id', 'created_at']) && newData.child('id').val() === $notificationId && newData.child('title').isString() && newData.child('message').isString() && newData.child('source_type').val() === 'reservation')"
+          }
+        }
+      }
+    },
+    "otp_codes": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "user_emails": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

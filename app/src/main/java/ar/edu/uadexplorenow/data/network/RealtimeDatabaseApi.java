@@ -31,6 +31,9 @@ public interface RealtimeDatabaseApi {
     @GET("activities/{id}.json")
     Call<ActivityRtdbDto> getActivity(@Path("id") String id);
 
+    @GET("activities/{id}.json")
+    Call<JsonElement> getActivityJson(@Path("id") String id);
+
     @PATCH("activities/{id}.json")
     Call<Void> patchActivity(@Path("id") String id, @Body Map<String, Object> updates);
 
@@ -46,6 +49,13 @@ public interface RealtimeDatabaseApi {
 
     @GET("users/{uid}/notifications.json")
     Call<JsonElement> getNotifications(@Path("uid") String uid);
+
+    @PUT("users/{uid}/notifications/{notificationId}.json")
+    Call<Void> putNotification(
+            @Path("uid") String uid,
+            @Path("notificationId") String notificationId,
+            @Body Map<String, Object> notification
+    );
 
     @PATCH("users/{uid}/notifications/{notificationId}.json")
     Call<Void> patchNotification(
