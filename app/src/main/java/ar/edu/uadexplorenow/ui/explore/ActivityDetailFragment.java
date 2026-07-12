@@ -44,6 +44,8 @@ import ar.edu.uadexplorenow.data.network.RealtimeDatabaseApi;
 import ar.edu.uadexplorenow.domain.ActivityDetail;
 import ar.edu.uadexplorenow.ui.common.SystemBarInsetsHelper;
 import ar.edu.uadexplorenow.ui.reservations.BookingConfirmationFragment;
+import ar.edu.uadexplorenow.notifications.ProgrammedNotificationsRepository;
+import ar.edu.uadexplorenow.notifications.NotificationForegroundPoller;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.datepicker.CalendarConstraints;
@@ -84,6 +86,10 @@ public class ActivityDetailFragment extends Fragment {
     CachedReservationDao cachedReservationDao;
     @Inject
     UserProfileFileCache userProfileFileCache;
+    @Inject
+    ProgrammedNotificationsRepository programmedNotificationsRepository;
+    @Inject
+    NotificationForegroundPoller notificationForegroundPoller;
 
     public static final String ARG_ACTIVITY_ID = "activity_id";
 
@@ -796,6 +802,9 @@ public class ActivityDetailFragment extends Fragment {
                                 if (!isAdded()) return;
                                 Log.d(TAG, "Reserva creada con exito para activityId=" + detail.id);
                                 dialog.dismiss();
+                                programmedNotificationsRepository.createImmediateReminder(
+                                        effectiveUid, reservationId, detail, slot,
+                                        notificationForegroundPoller::pollNow);
                                 navigateToBookingConfirmation(
                                         reservationId,
                                         detail,

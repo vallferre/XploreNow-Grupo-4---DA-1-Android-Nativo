@@ -281,25 +281,27 @@ public final class ReservationItem {
         String activityId = firstNonBlank(stringOrNumber(obj, "activity_id"), stringOrNumber(obj, "activityId"));
         ActivityDetail detail = !activityId.isEmpty() ? detailById.get(activityId) : null;
         String activityName = firstNonBlank(
+                detail != null ? detail.name : null,
                 stringOrNumber(obj, "activity_name"),
                 stringOrNumber(obj, "activityName"),
-                stringOrNumber(obj, "name"),
-                detail != null ? detail.name : null);
+                stringOrNumber(obj, "name"));
         if (activityName.isEmpty()) return null;
 
-        String destination = firstNonBlank(stringOrNumber(obj, "destination"), detail != null ? detail.destination : null);
-        String guideName = firstNonBlank(stringOrNumber(obj, "guide_name"), stringOrNumber(obj, "guideName"), detail != null ? detail.guideName : null);
-        String category = firstNonBlank(stringOrNumber(obj, "category"), detail != null ? detail.category : null);
-        long durationMinutes = firstLong(longValue(obj, "duration_minutes"), longValue(obj, "durationMinutes"), detail != null ? detail.durationMinutes : null, 0L);
+        String destination = firstNonBlank(detail != null ? detail.destination : null, stringOrNumber(obj, "destination"));
+        String guideName = firstNonBlank(detail != null ? detail.guideName : null, stringOrNumber(obj, "guide_name"), stringOrNumber(obj, "guideName"));
+        String category = firstNonBlank(detail != null ? detail.category : null, stringOrNumber(obj, "category"));
+        long durationMinutes = firstLong(detail != null ? detail.durationMinutes : null, longValue(obj, "duration_minutes"), longValue(obj, "durationMinutes"), 0L);
         int participants = (int) firstLong(longValue(obj, "participants"), longValue(obj, "people"), longValue(obj, "people_count"), longValue(obj, "peopleCount"), 1L);
         String status = firstNonBlank(stringOrNumber(obj, "status"), stringOrNumber(obj, "reservation_status"), stringOrNumber(obj, "reservationStatus"), ReservationStatus.CONFIRMED);
-        String scheduledAt = firstNonBlank(stringOrNumber(obj, "scheduled_at"), stringOrNumber(obj, "scheduledAt"), stringOrNumber(obj, "activity_date"), stringOrNumber(obj, "activityDate"), stringOrNumber(obj, "date"), stringOrNumber(obj, "created_at"), stringOrNumber(obj, "createdAt"), detail != null ? detail.dateIso : null);
-        DateInfo dateInfo = resolveDateInfo(scheduledAt);
-        String selectedDate = normalizeDateLabel(firstNonBlank(stringOrNumber(obj, "selected_date"), stringOrNumber(obj, "selectedDate")), dateInfo);
-        String selectedTime = normalizeTimeLabel(firstNonBlank(stringOrNumber(obj, "selected_time"), stringOrNumber(obj, "selectedTime")), dateInfo);
         String slotId = firstNonBlank(stringOrNumber(obj, "slot_id"), stringOrNumber(obj, "slotId"));
-        String imageUrl = firstNonBlank(stringOrNumber(obj, "image_url"), stringOrNumber(obj, "imageUrl"), detail != null && !detail.imageUrls.isEmpty() ? detail.imageUrls.get(0) : null);
-        String meetingPoint = firstNonBlank(stringOrNumber(obj, "meeting_point"), stringOrNumber(obj, "meetingPoint"), detail != null ? detail.meetingPoint : null);
+        String reservedSchedule = firstNonBlank(stringOrNumber(obj, "scheduled_at"), stringOrNumber(obj, "scheduledAt"), stringOrNumber(obj, "activity_date"), stringOrNumber(obj, "activityDate"), stringOrNumber(obj, "date"));
+        ActivityDetail.BookingSlot liveSlot = detail != null ? detail.findBookingSlot(slotId, reservedSchedule) : null;
+        String scheduledAt = firstNonBlank(liveSlot != null ? liveSlot.startAtIso : null, reservedSchedule, stringOrNumber(obj, "created_at"), stringOrNumber(obj, "createdAt"), detail != null ? detail.dateIso : null);
+        DateInfo dateInfo = resolveDateInfo(scheduledAt);
+        String selectedDate = liveSlot != null ? liveSlot.formattedDate() : normalizeDateLabel(firstNonBlank(stringOrNumber(obj, "selected_date"), stringOrNumber(obj, "selectedDate")), dateInfo);
+        String selectedTime = liveSlot != null ? liveSlot.formattedTime() : normalizeTimeLabel(firstNonBlank(stringOrNumber(obj, "selected_time"), stringOrNumber(obj, "selectedTime")), dateInfo);
+        String imageUrl = firstNonBlank(detail != null && !detail.imageUrls.isEmpty() ? detail.imageUrls.get(0) : null, stringOrNumber(obj, "image_url"), stringOrNumber(obj, "imageUrl"));
+        String meetingPoint = firstNonBlank(detail != null ? detail.meetingPoint : null, stringOrNumber(obj, "meeting_point"), stringOrNumber(obj, "meetingPoint"));
         double activityRatingValue = firstDouble(doubleValue(obj, "activity_rating"), doubleValue(obj, "activityRating"), doubleValue(obj, "user_rating"), doubleValue(obj, "userRating"), doubleValue(obj, "rating"), -1d);
         Double activityRating = activityRatingValue >= 0 ? activityRatingValue : null;
         double guideRatingValue = firstDouble(doubleValue(obj, "guide_rating"), doubleValue(obj, "guideRating"), -1d);
@@ -311,7 +313,7 @@ public final class ReservationItem {
         double pricePerPerson = firstDouble(doubleValue(obj, "price"), doubleValue(obj, "price_per_person"), detail != null ? detail.price : null, 0d);
         double totalPrice = firstDouble(doubleValue(obj, "total_price"), doubleValue(obj, "totalPrice"), null, pricePerPerson * Math.max(1, participants));
         String currency = firstNonBlank(stringOrNumber(obj, "currency"), detail != null ? detail.currency : null);
-        String description = firstNonBlank(stringOrNumber(obj, "description"), detail != null ? detail.description : null);
+        String description = firstNonBlank(detail != null ? detail.description : null, stringOrNumber(obj, "description"));
         ActivityDetail.CancellationPolicy policy = detail != null ? detail.cancellationPolicy : null;
         JsonObject policyObj = nestedObject(obj, "cancellation_policy", "cancellationPolicy");
         String cancellationType = firstNonBlank(policyObj != null ? stringOrNumber(policyObj, "type") : null, policy != null ? policy.type : null);

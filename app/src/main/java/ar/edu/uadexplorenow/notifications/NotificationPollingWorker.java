@@ -25,6 +25,7 @@ public final class NotificationPollingWorker extends Worker {
     @InstallIn(SingletonComponent.class)
     public interface Dependencies {
         NotificationsRepository notificationsRepository();
+        ProgrammedNotificationsRepository programmedNotificationsRepository();
     }
 
     public NotificationPollingWorker(@NonNull Context context, @NonNull WorkerParameters params) {
@@ -47,11 +48,13 @@ public final class NotificationPollingWorker extends Worker {
 
         try {
             Dependencies deps = EntryPointAccessors.fromApplication(context, Dependencies.class);
+            deps.programmedNotificationsRepository().syncBlocking(uid);
             List<NotificationItem> items = deps.notificationsRepository().refreshBlocking(uid);
             for (NotificationItem item : items) {
-                if (!item.isRead() && !NotificationDeliveryStore.wasNotified(context, item)) {
-                    LocalNotificationPresenter.show(context, item);
-                    NotificationDeliveryStore.markNotified(context, item);
+                if (!item.isRead() && !NotificationDeliveryStore.wasNotified(context, uid, item)) {
+                    if (LocalNotificationPresenter.show(context, item)) {
+                        NotificationDeliveryStore.markNotified(context, uid, item);
+                    }
                 }
             }
             return Result.success();

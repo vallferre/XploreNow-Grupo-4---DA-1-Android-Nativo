@@ -48,9 +48,9 @@ public final class LocalNotificationPresenter {
     }
 
     @SuppressLint("MissingPermission")
-    public static void show(@NonNull Context context, @NonNull NotificationItem item) {
+    public static boolean show(@NonNull Context context, @NonNull NotificationItem item) {
         ensureChannel(context);
-        if (!canPostNotifications(context)) return;
+        if (!canPostNotifications(context)) return false;
 
         Intent intent = new Intent(context, MainActivity.class)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -79,5 +79,6 @@ public final class LocalNotificationPresenter {
                 .setContentIntent(pendingIntent);
 
         NotificationManagerCompat.from(context).notify(item.id.hashCode(), builder.build());
+        return true;
     }
 }

@@ -14,12 +14,12 @@ public final class NotificationDeliveryStore {
 
     private NotificationDeliveryStore() {}
 
-    public static boolean wasNotified(@NonNull Context context, @NonNull NotificationItem item) {
-        return prefs(context).getBoolean(KEY_PREFIX + item.id, false);
+    public static boolean wasNotified(@NonNull Context context, @NonNull String uid, @NonNull NotificationItem item) {
+        return prefs(context).getBoolean(KEY_PREFIX + uid + "_" + item.id, false);
     }
 
-    public static void markNotified(@NonNull Context context, @NonNull NotificationItem item) {
-        prefs(context).edit().putBoolean(KEY_PREFIX + item.id, true).apply();
+    public static void markNotified(@NonNull Context context, @NonNull String uid, @NonNull NotificationItem item) {
+        prefs(context).edit().putBoolean(KEY_PREFIX + uid + "_" + item.id, true).apply();
     }
 
     private static SharedPreferences prefs(@NonNull Context context) {
